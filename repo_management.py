@@ -2,6 +2,7 @@ from typing import Counter
 from git import Repo
 from author_stats import Stats
 from logger import Logger
+from plot import Plot
 
 class RepoManagement:
 
@@ -14,10 +15,10 @@ class RepoManagement:
 
         authors = self.__get_authors_list()
 
-        # todo: only for test
-        authors = set(list(authors)[:2])
+        # # todo: only for test
+        # authors = set(list(authors)[:5])
 
-        all_stats = []
+        all_stats: list[Stats] = []
         for author in authors:
             stats = self.__get_changed_statts_count_per_author(author)
             author_stats = Stats(author, stats.get('commits'), stats.get('insertions'), stats.get('deletions'), stats.get('lines'), stats.get('files'))
@@ -37,6 +38,24 @@ class RepoManagement:
                 f"deletions: {stats.deletions:.4f}%, "
                 f"lines: {stats.lines:.4f}%, "
                 f"files: {stats.files:.4f}%")
+
+        # data for plotting
+        authors_list = []
+        commits_list = []
+        insertions_list = []
+        deletions_list = []
+        lines_list = []
+        files_list = []
+        for stats in all_stats:
+            authors_list.append(stats.name)
+            commits_list.append(stats.commits)
+            insertions_list.append(stats.insertions)
+            deletions_list.append(stats.deletions)
+            lines_list.append(stats.lines)
+            files_list.append(stats.files)
+
+        plot = Plot(authors_list, commits_list, insertions_list, deletions_list, lines_list, files_list)
+        plot.plot_all()
 
     def __get_authors_list(self):
         Logger.write_log("Getting authors list")

@@ -8,7 +8,7 @@ import json
 # ConfigKeys.load_values_from_json()
 # FILE_PATH = ConfigKeys.Keys.CONFIG_DIR.value + ConfigKeys.Keys.LOG_FILE.value
 
-FILE_PATH = "./logs.log"
+FILE_PATH = "./config/logs.log"
 
 class Logger:
     class LogType(Enum):
