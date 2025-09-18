@@ -28,28 +28,7 @@ class Logger:
                 raise KeyError(f"Key '{key}' not found in Logger.LogType")
 
     @staticmethod
-    def load_values_from_json():
-        """
-        Load log type values from a JSON file and update the LogType enum.
-        """
-        try:
-            with open(FILE_PATH, 'r') as file:
-                data = json.load(file)  # Parse JSON file content
-
-            # Update LogType enum values
-            Logger.LogType._set('INFO', data['LogService']['INFO'])
-            Logger.LogType._set('DEBUG', data['LogService']['DEBUG'])
-            Logger.LogType._set('WARN', data['LogService']['WARN'])
-            Logger.LogType._set('ERROR', data['LogService']['ERROR'])
-            Logger.LogType._set('MAX_LINES', data['LogService']['MaxLines']['value'])
-            Logger.LogType._set('LINES_TO_KEEP_AFTER_FILE_CLEAR', data['LogService']['LinesToKeepAfterFileClear']['value'])
-
-        except (FileNotFoundError, KeyError, json.JSONDecodeError) as e:
-            print(f"Error loading log type values from JSON: {e}")
-            raise
-
-    @staticmethod
-    def write_log(message: str, log_type: LogType = LogType.INFO, exception: Optional[Exception] = None):
+    def write_log(message: str, log_type: LogType = LogType.INFO, log_box = None, exception: Optional[Exception] = None):
         """
         Write a log entry to the file, always adding it to the top of the log file.
 
@@ -76,7 +55,11 @@ class Logger:
         else:
             new_log_entry = f"{str(datetime.now())} [{log_type.name}] {message}\n"
 
-        print(new_log_entry.replace("\n", ""))
+        message = new_log_entry.replace("\n", "")
+        print(message)
+
+        if log_box is not None:
+            log_box.write_to_logbox(message)
 
         # Read existing content from the log file
         try:
@@ -93,3 +76,7 @@ class Logger:
         with open(FILE_PATH, "w") as file:
             file.write(new_log_entry)
             file.writelines(existing_content)
+
+    @staticmethod
+    def write_to_logbox(log_box, message):
+        log_box.insert("0.0", "\n" + message)

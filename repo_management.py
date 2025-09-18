@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Counter
 from git import Repo
 from author_stats import Stats
@@ -6,8 +7,9 @@ from plot import Plot
 
 class RepoManagement:
 
-    def __init__(self, repo_path: str):
+    def __init__(self, repo_path: str, log_box):
         self._repo_obj = Repo(repo_path)
+        self.log_box = log_box
 
     def obtain_all_info_from_repo(self) -> None:
         # file_count = self.__get_cout_per_file()
@@ -34,10 +36,10 @@ class RepoManagement:
         for stat in stats_percentage:
             print(f"name: {stat.name}, "
                 f"commits: {stat.commits:.4f}%, "
-                f"insertions: {stats.insertions:.4f}%, "
-                f"deletions: {stats.deletions:.4f}%, "
-                f"lines: {stats.lines:.4f}%, "
-                f"files: {stats.files:.4f}%")
+                f"insertions: {stat.insertions:.4f}%, "
+                f"deletions: {stat.deletions:.4f}%, "
+                f"lines: {stat.lines:.4f}%, "
+                f"files: {stat.files:.4f}%")
 
         # data for plotting
         authors_list = []
@@ -58,12 +60,12 @@ class RepoManagement:
         plot.plot_all()
 
     def __get_authors_list(self):
-        Logger.write_log("Getting authors list")
+        Logger.write_log("Getting authors list", log_box=self.log_box)
         authors = set() # to obtain only the unique author without duplications
         for commit in self._repo_obj.iter_commits():
             authors.add(commit.author.name)
 
-        Logger.write_log(f"Stats list: {authors}")
+        Logger.write_log(f"Stats list: {authors}", log_box=self.log_box)
         return authors
 
     # git log --name-only --pretty=format:""
@@ -76,7 +78,7 @@ class RepoManagement:
 
     # git log --author="<authorname>" --oneline --shortstat
     def __get_changed_statts_count_per_author(self, author_name: str):
-        Logger.write_log(f"Getting author stats for {author_name}")
+        Logger.write_log(f"Getting author stats for {author_name}", log_box=self.log_box)
         author_stats = {'commits':0, 'insertions':0, 'deletions':0, 'lines':0, 'files':0}
         for commit in self._repo_obj.iter_commits(author=author_name):
             stats = commit.stats.total
@@ -86,11 +88,11 @@ class RepoManagement:
             author_stats['lines'] += stats.get('lines', 0)
             author_stats['files'] += stats.get('files', 0)
 
-        Logger.write_log(f"Stats obtained: {author_stats}")
+        Logger.write_log(f"Stats obtained: {author_stats}", log_box=self.log_box)
         return author_stats
 
     def __totals_values(self, all_stats: list[Stats]) -> Stats:
-        Logger.write_log(f"Getting totals stats")
+        Logger.write_log(f"Getting totals stats", log_box=self.log_box)
         total_commits = 0
         total_insertions = 0
         total_deletions = 0
@@ -105,7 +107,7 @@ class RepoManagement:
 
         # total author
         totals = Stats('TOTAL', total_commits, total_insertions, total_deletions, total_lines, total_files)
-        Logger.write_log(f"totals obtained: {totals}")
+        Logger.write_log(f"totals obtained: {totals}", log_box=self.log_box)
         return totals
 
     def __calculate_percentage_by_author(self, author_stats: Stats, total_stats: Stats) -> Stats:
