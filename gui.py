@@ -1,10 +1,10 @@
 import threading
 import customtkinter as ctk
-from repo_management import RepoManagement, Logger
-
+import tkinter as tk
+from repo_management import RepoManagement
 
 class GUI(ctk.CTk):
-    app_width, app_height = 600, 400
+    app_width, app_height = 800, 400
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -16,7 +16,7 @@ class GUI(ctk.CTk):
         ctk.set_default_color_theme("green")
         self.title("Git Repo Stats")
         self.centerWindow()
-        self.minsize(600, 400)
+        self.minsize(300, 200)
 
     def centerWindow(self):
         screen_width = self.winfo_screenwidth()
@@ -37,7 +37,6 @@ class GUI(ctk.CTk):
         self.entry_repopath.grid(row=0, column=1, padx=(0, 10), pady=5, sticky="ew")
 
         self.log_box = ctk.CTkTextbox(self)
-        self.log_box.bind("<Key>", lambda e: "break")  # rendilo readonly
         self.log_box.grid(row=2, column=0, columnspan=2, padx=10, pady=(10, 0), sticky="nsew")
 
         get_button = ctk.CTkButton(
@@ -62,4 +61,4 @@ class GUI(ctk.CTk):
 
     def write_to_logbox(self, message: str):
         """Thread-safe: accoda update nel main thread"""
-        self.after(0, lambda: self.log_box.insert("0.0", message + "\n"))
+        self.after(0, lambda: self.log_box.insert(tk.END, message + "\n"))

@@ -76,7 +76,3 @@ class Logger:
         with open(FILE_PATH, "w") as file:
             file.write(new_log_entry)
             file.writelines(existing_content)
-
-    @staticmethod
-    def write_to_logbox(log_box, message):
-        log_box.insert("0.0", "\n" + message)

@@ -3,10 +3,11 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 class Plot:
+    def __init__(self):
+        pass
 
-    def __init__(self, authors: list[str], commits: list[int], insertions: list[int],
-                 deletions: list[int], lines: list[int], files: list[int]):
-        self.df = pd.DataFrame({
+    def init_dataframe_authors(self, authors: list[str], commits: list[int], insertions: list[int], deletions: list[int], lines: list[int], files: list[int]):
+        self.dataframe_authors = pd.DataFrame({
             "Authors": authors,
             "Commits": commits,
             "Insertions": insertions,
@@ -15,7 +16,13 @@ class Plot:
             "Files": files
         })
 
-    def plot_all(self):
+    def init_dataframe_files(self, files: list[str], changes: list[int]):
+        self.dataframe_files = pd.DataFrame({
+            "Files": files,
+            "Changes": changes
+        })
+
+    def plot_authors_stats(self):
         fig = make_subplots(
             rows=3, cols=2,
             subplot_titles=(
@@ -25,11 +32,11 @@ class Plot:
             )
         )
 
-        fig.add_trace(go.Bar(x=self.df["Authors"], y=self.df["Commits"], name="Commits"), row=1, col=1)
-        fig.add_trace(go.Bar(x=self.df["Authors"], y=self.df["Insertions"], name="Insertions"), row=1, col=2)
-        fig.add_trace(go.Bar(x=self.df["Authors"], y=self.df["Deletions"], name="Deletions"), row=2, col=1)
-        fig.add_trace(go.Bar(x=self.df["Authors"], y=self.df["Lines"], name="Lines"), row=2, col=2)
-        fig.add_trace(go.Bar(x=self.df["Authors"], y=self.df["Files"], name="Files"), row=3, col=1)
+        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Commits"], name="Commits"), row=1, col=1)
+        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Insertions"], name="Insertions"), row=1, col=2)
+        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Deletions"], name="Deletions"), row=2, col=1)
+        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Lines"], name="Lines"), row=2, col=2)
+        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Files"], name="Files"), row=3, col=1)
 
         fig.update_layout(
             title_text="Repo Statistics",
@@ -37,4 +44,19 @@ class Plot:
             width=1800,
             margin=dict(l=50, r=50, t=100, b=50)
         )
-        fig.show()
+        fig.show(renderer="browser")
+
+    def plot_files_stats(self):
+        fig = make_subplots(
+            rows=1, cols=1,
+            subplot_titles=(
+                "Changes Count", "Files"
+            )
+        )
+
+        fig.add_trace(go.Bar(x=self.dataframe_files["Files"], y=self.dataframe_files["Changes"], name="Changes"), row=1, col=1)
+
+        fig.update_layout(
+            title_text="Repo Statistics"
+        )
+        fig.show(renderer="browser")

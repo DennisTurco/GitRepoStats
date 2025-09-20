@@ -1,9 +1,8 @@
-from datetime import datetime, timedelta
-from typing import Counter
 from git import Repo
 from author_stats import Stats
 from logger import Logger
 from plot import Plot
+from typing import Dict, Any
 
 class RepoManagement:
 
@@ -12,8 +11,10 @@ class RepoManagement:
         self.log_box = log_box
 
     def obtain_all_info_from_repo(self) -> None:
-        # file_count = self.__get_cout_per_file()
-        # print(file_count)
+        file_info: Dict[str, Dict[str, Any]] = self.__get_info_per_file()
+
+        for name, info in file_info.items():
+            print(f"{name}, {info["changes"]}, {info["last_update"]}")
 
         authors = self.__get_authors_list()
 
@@ -26,38 +27,10 @@ class RepoManagement:
             author_stats = Stats(author, stats.get('commits'), stats.get('insertions'), stats.get('deletions'), stats.get('lines'), stats.get('files'))
             all_stats.append(author_stats)
 
-        # totals and percents
-        totals = self.__totals_values(all_stats)
-        stats_percentage = []
-        for stats in all_stats:
-            stat_percentage = self.__calculate_percentage_by_author(stats, totals)
-            stats_percentage.append(stat_percentage)
+        self.__get_totals_and_percents_per_author(all_stats)
 
-        for stat in stats_percentage:
-            print(f"name: {stat.name}, "
-                f"commits: {stat.commits:.4f}%, "
-                f"insertions: {stat.insertions:.4f}%, "
-                f"deletions: {stat.deletions:.4f}%, "
-                f"lines: {stat.lines:.4f}%, "
-                f"files: {stat.files:.4f}%")
+        self.__plot_all_stats(all_stats, file_info)
 
-        # data for plotting
-        authors_list = []
-        commits_list = []
-        insertions_list = []
-        deletions_list = []
-        lines_list = []
-        files_list = []
-        for stats in all_stats:
-            authors_list.append(stats.name)
-            commits_list.append(stats.commits)
-            insertions_list.append(stats.insertions)
-            deletions_list.append(stats.deletions)
-            lines_list.append(stats.lines)
-            files_list.append(stats.files)
-
-        plot = Plot(authors_list, commits_list, insertions_list, deletions_list, lines_list, files_list)
-        plot.plot_all()
 
     def __get_authors_list(self):
         Logger.write_log("Getting authors list", log_box=self.log_box)
@@ -69,12 +42,26 @@ class RepoManagement:
         return authors
 
     # git log --name-only --pretty=format:""
-    def __get_cout_per_file(self)-> dict[str, int]:
-        file_counts = {}
+    def __get_info_per_file(self)-> Dict[str, Dict[str, Any]]:
+        Logger.write_log("Getting changes by file", log_box=self.log_box)
+        file_info = {}
         for commit in self._repo_obj.iter_commits():
             for file in commit.stats.files:
-                file_counts[file] = file_counts.get(file, 0) + 1
-        return file_counts
+                last_update = commit.committed_datetime
+                last_author = commit.author.name
+                if file not in file_info:
+                    file_info[file] = {
+                        "changes": 0,
+                        "last_author": last_author,
+                        "last_update": last_update
+                    }
+                file_info[file]["changes"] += 1
+
+                if last_update > file_info[file]["last_update"]:
+                    file_info[file]["last_update"] = last_update
+                    file_info[file]["last_author"] = last_author
+
+        return file_info
 
     # git log --author="<authorname>" --oneline --shortstat
     def __get_changed_statts_count_per_author(self, author_name: str):
@@ -117,3 +104,52 @@ class RepoManagement:
         lines_percentage = author_stats.lines / total_stats.lines * 100
         files_percentage = author_stats.files / total_stats.files * 100
         return Stats(author_stats.name, commits_percentage, insertions_percentage, deletions_percentage, lines_percentage, files_percentage)
+
+    def __get_totals_and_percents_per_author(self, all_stats: list[Stats]):
+        totals = self.__totals_values(all_stats)
+        stats_percentage = []
+        for stats in all_stats:
+            stat_percentage = self.__calculate_percentage_by_author(stats, totals)
+            stats_percentage.append(stat_percentage)
+
+        for stat in stats_percentage:
+            print(f"name: {stat.name}, "
+                f"commits: {stat.commits:.4f}%, "
+                f"insertions: {stat.insertions:.4f}%, "
+                f"deletions: {stat.deletions:.4f}%, "
+                f"lines: {stat.lines:.4f}%, "
+                f"files: {stat.files:.4f}%")
+
+    def __plot_all_stats(self, all_stats: list[Stats], file_info: Dict[str, Dict[str, Any]]) -> None:
+        Logger.write_log("Plotting data", log_box=self.log_box)
+        authors_list = []
+        commits_list = []
+        insertions_list = []
+        deletions_list = []
+        lines_list = []
+        files_list = []
+        for stats in all_stats:
+            authors_list.append(stats.name)
+            commits_list.append(stats.commits)
+            insertions_list.append(stats.insertions)
+            deletions_list.append(stats.deletions)
+            lines_list.append(stats.lines)
+            files_list.append(stats.files)
+
+        Logger.write_log(f"=============== Files stats ===============", log_box=self.log_box)
+        file_name = []
+        changes_per_file = []
+        for key, value in file_info.items():
+            file_name.append(key)
+            count = value["changes"]
+            changes_per_file.append(count)
+
+            last_update = value["last_update"]
+            last_author = value["last_author"]
+            Logger.write_log(f"File: {key}, Last Update: {last_update}, Last Author: {last_author}, Changed: {count} times", log_box=self.log_box)
+
+        plot = Plot()
+        plot.init_dataframe_authors(authors_list, commits_list, insertions_list, deletions_list, lines_list, files_list)
+        plot.plot_authors_stats()
+        plot.init_dataframe_files(file_name, changes_per_file)
+        plot.plot_files_stats()
