@@ -1,5 +1,6 @@
 from git import Repo
-from author_stats import Stats
+from entities.author_stats import Stats
+from dashboard import Dashboard
 from logger import Logger
 from plot import Plot
 from typing import Dict, Any
@@ -9,6 +10,16 @@ class RepoManagement:
     def __init__(self, repo_path: str, log_box):
         self._repo_obj = Repo(repo_path)
         self.log_box = log_box
+        self.repo_name = self.__get_repo_name_from_path(repo_path)
+
+    def __get_repo_name_from_path(self, repo_path) -> str:
+        pos = 0
+        for i in range(len(repo_path)-1, 0, -1):
+            if repo_path[i]!='\\':
+                pos+=1
+            else:
+                break
+        return repo_path[len(repo_path)-pos:]
 
     def obtain_all_info_from_repo(self) -> None:
         file_info: Dict[str, Dict[str, Any]] = self.__get_info_per_file()
@@ -139,6 +150,7 @@ class RepoManagement:
         Logger.write_log(f"=============== Files stats ===============", log_box=self.log_box)
         file_name = []
         changes_per_file = []
+        last_update_per_file_csv = ["File,LastUpdate,LastEditor"]
         for key, value in file_info.items():
             file_name.append(key)
             count = value["changes"]
@@ -146,10 +158,19 @@ class RepoManagement:
 
             last_update = value["last_update"]
             last_author = value["last_author"]
+
+            last_update_per_file_csv.append(f"{key},{last_update},{last_author}")
             Logger.write_log(f"File: {key}, Last Update: {last_update}, Last Author: {last_author}, Changed: {count} times", log_box=self.log_box)
 
         plot = Plot()
         plot.init_dataframe_authors(authors_list, commits_list, insertions_list, deletions_list, lines_list, files_list)
-        plot.plot_authors_stats()
         plot.init_dataframe_files(file_name, changes_per_file)
-        plot.plot_files_stats()
+
+        authors_html = plot.get_authors_html()
+        files_html = plot.get_files_html()
+
+        Logger.write_log("Generating dashboard file .html", log_box=self.log_box)
+        Dashboard.generate_html_page(self.repo_name, authors_html, files_html, last_update_per_file_csv)
+
+        Logger.write_log("Opening Dashboard", log_box=self.log_box)
+        Dashboard.open_result_website()

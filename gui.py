@@ -4,7 +4,7 @@ import tkinter as tk
 from repo_management import RepoManagement
 
 class GUI(ctk.CTk):
-    app_width, app_height = 800, 400
+    app_width, app_height = 950, 400
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,12 +43,12 @@ class GUI(ctk.CTk):
             self,
             text="Get stats",
             border_width=2,
-            command=self.run_get_stats_thread  # NON chiami subito, lanci un thread
+            command=self.run_get_stats_thread
         )
         get_button.grid(row=1, column=0, columnspan=2, pady=15, sticky="n")
 
     def run_get_stats_thread(self):
-        """Esegue l'analisi in un thread separato"""
+        """separated thread"""
         repo_path = self.entry_repopath.get()
         threading.Thread(target=self.get_stats, args=(repo_path,), daemon=True).start()
 
@@ -60,5 +60,9 @@ class GUI(ctk.CTk):
             self.write_to_logbox(f"Errore: {e}")
 
     def write_to_logbox(self, message: str):
-        """Thread-safe: accoda update nel main thread"""
-        self.after(0, lambda: self.log_box.insert(tk.END, message + "\n"))
+        """Thread-safe"""
+        self.after(0, lambda: self._append_to_log(message))
+
+    def _append_to_log(self, message: str):
+        self.log_box.insert(tk.END, message + "\n")
+        self.log_box.see(tk.END) # move cursor to the bottom
