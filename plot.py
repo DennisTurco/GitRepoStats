@@ -2,24 +2,27 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from entities.author_stats import AuthorStats
+from entities.file_stats import FileStats
+
 class Plot:
     def __init__(self):
         pass
 
-    def init_dataframe_authors(self, authors: list[str], commits: list[int], insertions: list[int], deletions: list[int], lines: list[int], files: list[int]):
+    def init_dataframe_authors(self, author_stats: list[AuthorStats]):
         self.dataframe_authors = pd.DataFrame({
-            "Authors": authors,
-            "Commits": commits,
-            "Insertions": insertions,
-            "Deletions": deletions,
-            "Lines": lines,
-            "Files": files
+            "Authors": [s.name for s in author_stats],
+            "Commits": [s.commits for s in author_stats],
+            "Insertions": [s.insertions for s in author_stats],
+            "Deletions": [s.deletions for s in author_stats],
+            "Lines": [s.lines for s in author_stats],
+            "Files": [s.files for s in author_stats],
         })
 
-    def init_dataframe_files(self, files: list[str], changes: list[int]):
+    def init_dataframe_files(self, file_stats: list[FileStats]):
         self.dataframe_files = pd.DataFrame({
-            "Files": files,
-            "Changes": changes
+            "Files": [s.name for s in file_stats],
+            "Changes": [s.changes for s in file_stats]
         })
 
     def plot_authors_stats(self):
