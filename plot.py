@@ -10,20 +10,11 @@ class Plot:
         pass
 
     def init_dataframe_authors(self, author_stats: list[AuthorStats]):
-        self.dataframe_authors = pd.DataFrame({
-            "Authors": [s.name for s in author_stats],
-            "Commits": [s.commits for s in author_stats],
-            "Insertions": [s.insertions for s in author_stats],
-            "Deletions": [s.deletions for s in author_stats],
-            "Lines": [s.lines for s in author_stats],
-            "Files": [s.files for s in author_stats],
-        })
+        self.author_stats = author_stats
 
     def init_dataframe_files(self, file_stats: list[FileStats]):
-        self.dataframe_files = pd.DataFrame({
-            "Files": [s.name for s in file_stats],
-            "Changes": [s.changes for s in file_stats]
-        })
+        self.file_stats = file_stats
+
 
     def plot_authors_stats(self):
         fig = make_subplots(
@@ -35,11 +26,40 @@ class Plot:
             )
         )
 
-        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Commits"], name="Commits"), row=1, col=1)
-        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Insertions"], name="Insertions"), row=1, col=2)
-        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Deletions"], name="Deletions"), row=2, col=1)
-        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Lines"], name="Lines"), row=2, col=2)
-        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Files"], name="Files"), row=3, col=1)
+        AuthorStats.sort_by_commits(self.author_stats)
+        dataframe_author_commits = pd.DataFrame({
+            "Authors": [s.name for s in self.author_stats],
+            "Commits": [s.commits for s in self.author_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_author_commits["Authors"], y=dataframe_author_commits["Commits"], name="Commits"), row=1, col=1)
+
+        AuthorStats.sort_by_insertions(self.author_stats)
+        dataframe_author_insertions = pd.DataFrame({
+            "Authors": [s.name for s in self.author_stats],
+            "Insertions": [s.insertions for s in self.author_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_author_insertions["Authors"], y=dataframe_author_insertions["Insertions"], name="Insertions"), row=1, col=2)
+
+        AuthorStats.sort_by_deletions(self.author_stats)
+        dataframe_author_deletions = pd.DataFrame({
+            "Authors": [s.name for s in self.author_stats],
+            "Deletions": [s.deletions for s in self.author_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_author_deletions["Authors"], y=dataframe_author_deletions["Deletions"], name="Deletions"), row=2, col=1)
+
+        AuthorStats.sort_by_lines(self.author_stats)
+        dataframe_author_lines = pd.DataFrame({
+            "Authors": [s.name for s in self.author_stats],
+            "Lines": [s.lines for s in self.author_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_author_lines["Authors"], y=dataframe_author_lines["Lines"], name="Lines"), row=2, col=2)
+
+        AuthorStats.sort_by_files(self.author_stats)
+        dataframe_author_files = pd.DataFrame({
+            "Authors": [s.name for s in self.author_stats],
+            "Files": [s.files for s in self.author_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_author_files["Authors"], y=dataframe_author_files["Files"], name="Files"), row=3, col=1)
 
         fig.update_layout(
             title_text="Repo Statistics",
@@ -57,7 +77,12 @@ class Plot:
             )
         )
 
-        fig.add_trace(go.Bar(x=self.dataframe_files["Files"], y=self.dataframe_files["Changes"], name="Changes"), row=1, col=1)
+        FileStats.sort_by_changes(self.file_stats)
+        dataframe_files = pd.DataFrame({
+            "Files": [s.name for s in self.file_stats],
+            "Changes": [s.changes for s in self.file_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_files["Files"], y=dataframe_files["Changes"], name="Changes"), row=1, col=1)
 
         fig.update_layout(
             title_text="Repo Statistics"
@@ -76,11 +101,40 @@ class Plot:
             horizontal_spacing=0.1
         )
 
-        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Commits"], name="Commits"), row=1, col=1)
-        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Insertions"], name="Insertions"), row=1, col=2)
-        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Deletions"], name="Deletions"), row=2, col=1)
-        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Lines"], name="Lines"), row=2, col=2)
-        fig.add_trace(go.Bar(x=self.dataframe_authors["Authors"], y=self.dataframe_authors["Files"], name="Files"), row=3, col=1)
+        AuthorStats.sort_by_commits(self.author_stats)
+        dataframe_author_commits = pd.DataFrame({
+            "Authors": [s.name for s in self.author_stats],
+            "Commits": [s.commits for s in self.author_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_author_commits["Authors"], y=dataframe_author_commits["Commits"], name="Commits"), row=1, col=1)
+
+        AuthorStats.sort_by_insertions(self.author_stats)
+        dataframe_author_insertions = pd.DataFrame({
+            "Authors": [s.name for s in self.author_stats],
+            "Insertions": [s.insertions for s in self.author_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_author_insertions["Authors"], y=dataframe_author_insertions["Insertions"], name="Insertions"), row=1, col=2)
+
+        AuthorStats.sort_by_deletions(self.author_stats)
+        dataframe_author_deletions = pd.DataFrame({
+            "Authors": [s.name for s in self.author_stats],
+            "Deletions": [s.deletions for s in self.author_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_author_deletions["Authors"], y=dataframe_author_deletions["Deletions"], name="Deletions"), row=2, col=1)
+
+        AuthorStats.sort_by_lines(self.author_stats)
+        dataframe_author_lines = pd.DataFrame({
+            "Authors": [s.name for s in self.author_stats],
+            "Lines": [s.lines for s in self.author_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_author_lines["Authors"], y=dataframe_author_lines["Lines"], name="Lines"), row=2, col=2)
+
+        AuthorStats.sort_by_files(self.author_stats)
+        dataframe_author_files = pd.DataFrame({
+            "Authors": [s.name for s in self.author_stats],
+            "Files": [s.files for s in self.author_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_author_files["Authors"], y=dataframe_author_files["Files"], name="Files"), row=3, col=1)
 
         fig.update_layout(
             margin=dict(l=100, r=100, t=100, b=100),
@@ -92,5 +146,11 @@ class Plot:
 
     def get_files_html(self):
         fig = make_subplots(rows=1, cols=1, subplot_titles=("Changes Count", "Files"))
-        fig.add_trace(go.Bar(x=self.dataframe_files["Files"], y=self.dataframe_files["Changes"], name="Changes"), row=1, col=1)
+
+        FileStats.sort_by_changes(self.file_stats)
+        dataframe_files = pd.DataFrame({
+            "Files": [s.name for s in self.file_stats],
+            "Changes": [s.changes for s in self.file_stats]
+        })
+        fig.add_trace(go.Bar(x=dataframe_files["Files"], y=dataframe_files["Changes"], name="Changes"), row=1, col=1)
         return fig.to_html(full_html=False, include_plotlyjs=False)
