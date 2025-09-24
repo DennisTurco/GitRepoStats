@@ -52,7 +52,7 @@ class Dashboard():
         $(document).ready(function() {{
             $('#myTable').DataTable({{
                 "pageLength": 20,
-                "lengthMenu": [5, 10, 25, 50, 100],
+                "lengthMenu": [5, 10, 20, 50, 100],
                 "order": []
             }});
         }});
