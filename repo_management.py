@@ -156,9 +156,10 @@ class RepoManagement:
         authors_html = plot.get_authors_html()
         files_html = plot.get_files_html()
         commits_html = plot.get_commits_html()
+        comulative_commits_html = plot.get_commits_cumulative_html()
 
         Logger.write_log("Generating dashboard file .html", log_box=self.log_box)
-        Dashboard.generate_html_page(self.repo_name, authors_html, files_html, commits_html, FileStats.to_csv_data_list(file_stats))
+        Dashboard.generate_html_page(self.repo_name, authors_html, files_html, commits_html, comulative_commits_html, FileStats.to_csv_data_list(file_stats))
 
         Logger.write_log(message="Opening Dashboard", log_box=self.log_box)
         Dashboard.open_result_website()

@@ -121,10 +121,72 @@ class Plot:
             title="Commits by author over time",
             xaxis_title="Date",
             yaxis_title="Commits",
-            template="plotly_white"
+            template="plotly_white",
+            autosize=True,
+            width=None,
+            height=600,
+            margin=dict(l=50, r=50, t=80, b=50)
         )
 
         return fig.to_html(full_html=False, include_plotlyjs=False)
 
 
+    def get_commits_cumulative_html(self):
+        # Creiamo un DataFrame dai CommitStats
+        df = pd.DataFrame({
+            "Author": [s.author_name for s in self.commit_stats],
+            "Date": [pd.to_datetime(s.date) for s in self.commit_stats],
+            "Commit": [s.name for s in self.commit_stats]
+        })
+
+        # Raggruppiamo per autore e data, contiamo i commit
+        commits_per_day = (
+            df.groupby(["Author", "Date"])
+            .size()
+            .reset_index(name="CommitCount")
+        )
+
+        # Ordiniamo per data
+        commits_per_day = commits_per_day.sort_values(by="Date")
+
+        fig = go.Figure()
+
+        # Aggiungiamo cumulativo per ogni autore
+        for author, data in commits_per_day.groupby("Author"):
+            data = data.sort_values(by="Date")
+            data["CumulativeCommits"] = data["CommitCount"].cumsum()
+
+            fig.add_trace(
+                go.Scatter(
+                    x=data["Date"],
+                    y=data["CumulativeCommits"],
+                    mode="lines+markers",
+                    name=author
+                )
+            )
+
+        # Totale cumulativo (linea aggiuntiva)
+        total_data = commits_per_day.groupby("Date")["CommitCount"].sum().sort_index().cumsum()
+        fig.add_trace(
+            go.Scatter(
+                x=total_data.index,
+                y=total_data.values,
+                mode="lines",
+                name="Total Commits",
+                line=dict(color="black", dash="dot")
+            )
+        )
+
+        fig.update_layout(
+            title="Cumulative Commits Over Time",
+            xaxis_title="Date",
+            yaxis_title="Cumulative Commits",
+            template="plotly_white",
+            autosize=True,
+            width=None,
+            height=600,
+            margin=dict(l=50, r=50, t=80, b=50)
+        )
+
+        return fig.to_html(full_html=False, include_plotlyjs=False)
 

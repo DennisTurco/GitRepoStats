@@ -5,10 +5,10 @@ FILE_PATH: str = "repo_stats.html"
 class Dashboard():
 
     @staticmethod
-    def generate_html_page(repo_name, authors_html, files_html, commits_html, last_update_per_file: list[str]):
+    def generate_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, last_update_per_file: list[str]):
         with open(FILE_PATH, "w") as f:
             data_table = Dashboard.__list_to_html_table(last_update_per_file)
-            html_page = Dashboard.__build_and_get_html_page(repo_name, authors_html, files_html, commits_html, data_table)
+            html_page = Dashboard.__build_and_get_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, data_table)
             f.write(html_page)
 
     @staticmethod
@@ -34,7 +34,7 @@ class Dashboard():
         return table_html
 
     @staticmethod
-    def __build_and_get_html_page(repo_name, authors_html, files_html, commits_html, data_table):
+    def __build_and_get_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, data_table):
         html_page = f"""
 <!DOCTYPE html>
 <html>
@@ -51,7 +51,7 @@ class Dashboard():
     <script>
         $(document).ready(function() {{
             $('#myTable').DataTable({{
-                "pageLength": 10,
+                "pageLength": 20,
                 "lengthMenu": [5, 10, 25, 50, 100],
                 "order": []
             }});
@@ -91,6 +91,7 @@ class Dashboard():
 
         <h2> Stats per author over time </h2>
         {commits_html}
+        {comulative_commits_html}
     </div>
 
     <div id="Files" class="tabcontent">
