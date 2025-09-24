@@ -51,10 +51,13 @@ class RepoManagement:
         # to obtain only the unique file without duplications
         files = {file for commit in self._repo_obj.iter_commits() for file in commit.stats.files.keys()}
 
+        cont = 0 # only for test
         stats = []
         for file in files:
-            # Logger.write_log(f"Getting file stats for {file}...", log_box=self.log_box)
+            Logger.write_log(f"Getting file stats for {file}...", log_box=self.log_box)
             stats.append(self.__get_file_stats(file))
+            cont += 1 # only for test
+            if cont == 100: break # only for test
 
         Logger.write_log(f"File stats list obtained ({len(stats)} files)", log_box=self.log_box)
         return stats
