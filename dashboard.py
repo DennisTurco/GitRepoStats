@@ -1,15 +1,14 @@
 import webbrowser
 
-
 FILE_PATH: str = "repo_stats.html"
 
 class Dashboard():
 
     @staticmethod
-    def generate_html_page(repo_name, authors_html, files_html, last_update_per_file: list[str]):
+    def generate_html_page(repo_name, authors_html, files_html, commits_html, last_update_per_file: list[str]):
         with open(FILE_PATH, "w") as f:
-            data_list = Dashboard.__manage_list_for_html_page(last_update_per_file)
-            html_page = Dashboard.__build_and_get_html_page(repo_name, authors_html, files_html, data_list)
+            data_table = Dashboard.__list_to_html_table(last_update_per_file)
+            html_page = Dashboard.__build_and_get_html_page(repo_name, authors_html, files_html, commits_html, data_table)
             f.write(html_page)
 
     @staticmethod
@@ -17,20 +16,48 @@ class Dashboard():
         webbrowser.open(FILE_PATH)
 
     @staticmethod
-    def __manage_list_for_html_page(data_lines: list[str]):
-        data = ""
-        for line in data_lines:
-            data += f"{line}<br>"
-        return data
+    def __list_to_html_table(data: list[str]) -> str:
+        rows = [row.split(",") for row in data]
+        header, *body = rows
+        col_count = len(header)
+
+        # correggi ogni riga: aggiungi celle vuote se mancano colonne
+        normalized_body = [row + [""] * (col_count - len(row)) for row in body]
+
+        table_html = "<table id='myTable' class='display'>\n"
+        table_html += "  <thead><tr>" + "".join(f"<th>{col}</th>" for col in header) + "</tr></thead>\n"
+        table_html += "  <tbody>\n"
+        for row in normalized_body:
+            table_html += "    <tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>\n"
+        table_html += "  </tbody>\n</table>"
+
+        return table_html
 
     @staticmethod
-    def __build_and_get_html_page(repo_name, authors_html, files_html, data_list):
+    def __build_and_get_html_page(repo_name, authors_html, files_html, commits_html, data_table):
         html_page = f"""
 <!DOCTYPE html>
 <html>
 <head>
     <title>Repo Stats</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <meta charset="UTF-8">
+
+    <!-- DataTables CSS + JS -->
+    <link rel="stylesheet"
+          href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+    <script>
+        $(document).ready(function() {{
+            $('#myTable').DataTable({{
+                "pageLength": 10,
+                "lengthMenu": [5, 10, 25, 50, 100],
+                "order": []
+            }});
+        }});
+    </script>
+
     <style>
         body {{ font-family: Arial, sans-serif; margin: 20px; }}
         .tab {{
@@ -63,6 +90,7 @@ class Dashboard():
         {authors_html}
 
         <h2> Stats per author over time </h2>
+        {commits_html}
     </div>
 
     <div id="Files" class="tabcontent">
@@ -70,7 +98,7 @@ class Dashboard():
         {files_html}
 
         <h2> Last update per file </h2>
-        {data_list}
+        {data_table}
     </div>
 
     <script>
@@ -87,7 +115,6 @@ class Dashboard():
             document.getElementById(tabName).style.display = "block";
             evt.currentTarget.className += " active";
         }}
-
         document.getElementById("defaultOpen").click();
     </script>
 </body>

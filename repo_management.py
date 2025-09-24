@@ -1,5 +1,6 @@
 from git import Repo
 from dashboard import Dashboard
+from entities.commit_stats import CommitStats
 from logger import Logger
 from plot import Plot
 
@@ -26,8 +27,9 @@ class RepoManagement:
     def obtain_all_info_from_repo(self) -> None:
         author_stats = self.__get_authors_stats_list()
         file_stats = self.__get_files_stats_list()
+        commits_stats = self.__get_commits_stats_list()
 
-        self.__plot_all_stats(author_stats, file_stats)
+        self.__plot_all_stats(author_stats, file_stats, commits_stats)
 
 
     def __get_authors_stats_list(self) -> list[AuthorStats]:
@@ -38,7 +40,7 @@ class RepoManagement:
 
         stats = []
         for author in authors:
-            Logger.write_log(f"Getting author stats for {author}...", log_box=self.log_box)
+            Logger.write_log(f"Getting author stats for {author}", log_box=self.log_box)
             stats.append(self.__get_author_stats(author))
 
         Logger.write_log(f"Author stats list obtained ({len(stats)} authors)", log_box=self.log_box)
@@ -54,7 +56,7 @@ class RepoManagement:
         cont = 0 # only for test
         stats = []
         for file in files:
-            Logger.write_log(f"Getting file stats for {file}...", log_box=self.log_box)
+            Logger.write_log(f"Getting file stats for {file}", log_box=self.log_box)
             stats.append(self.__get_file_stats(file))
             cont += 1 # only for test
             if cont == 100: break # only for test
@@ -62,6 +64,15 @@ class RepoManagement:
         Logger.write_log(f"File stats list obtained ({len(stats)} files)", log_box=self.log_box)
         return stats
 
+    def __get_commits_stats_list(self) -> list[CommitStats]:
+        Logger.write_log("Getting filecommitss stats list...", log_box=self.log_box)
+
+        commits = []
+        for commit in self._repo_obj.iter_commits():
+            Logger.write_log(f"Getting commit stats for {commit}", log_box=self.log_box)
+            commits.append(CommitStats(commit, commit.author.name, len(commit.stats.files.keys()), commit.committed_datetime))
+
+        return commits
 
     # git log --author="<authorname>" --oneline --shortstat
     def __get_author_stats(self, author_name: str) -> AuthorStats:
@@ -134,18 +145,20 @@ class RepoManagement:
                 f"lines: {stat.lines:.4f}%, "
                 f"files: {stat.files:.4f}%")
 
-    def __plot_all_stats(self, all_stats: list[AuthorStats], file_stats: list[FileStats]) -> None:
+    def __plot_all_stats(self, all_stats: list[AuthorStats], file_stats: list[FileStats], commits_stats: list[CommitStats]) -> None:
         Logger.write_log("Preparing data for plotting", log_box=self.log_box)
 
         plot = Plot()
         plot.init_dataframe_authors(all_stats)
         plot.init_dataframe_files(file_stats)
+        plot.init_dataframe_commits(commits_stats)
 
         authors_html = plot.get_authors_html()
         files_html = plot.get_files_html()
+        commits_html = plot.get_commits_html()
 
         Logger.write_log("Generating dashboard file .html", log_box=self.log_box)
-        Dashboard.generate_html_page(self.repo_name, authors_html, files_html, FileStats.to_csv_data_list(file_stats))
+        Dashboard.generate_html_page(self.repo_name, authors_html, files_html, commits_html, FileStats.to_csv_data_list(file_stats))
 
         Logger.write_log(message="Opening Dashboard", log_box=self.log_box)
         Dashboard.open_result_website()

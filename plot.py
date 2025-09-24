@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from entities.author_stats import AuthorStats
+from entities.commit_stats import CommitStats
 from entities.file_stats import FileStats
 
 class Plot:
@@ -15,79 +16,8 @@ class Plot:
     def init_dataframe_files(self, file_stats: list[FileStats]):
         self.file_stats = file_stats
 
-
-    def plot_authors_stats(self):
-        fig = make_subplots(
-            rows=3, cols=2,
-            subplot_titles=(
-                "Commits per Author", "Insertions per Author",
-                "Deletions per Author", "Lines per Author",
-                "Files per Author", ""
-            )
-        )
-
-        AuthorStats.sort_by_commits(self.author_stats)
-        dataframe_author_commits = pd.DataFrame({
-            "Authors": [s.name for s in self.author_stats],
-            "Commits": [s.commits for s in self.author_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_author_commits["Authors"], y=dataframe_author_commits["Commits"], name="Commits"), row=1, col=1)
-
-        AuthorStats.sort_by_insertions(self.author_stats)
-        dataframe_author_insertions = pd.DataFrame({
-            "Authors": [s.name for s in self.author_stats],
-            "Insertions": [s.insertions for s in self.author_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_author_insertions["Authors"], y=dataframe_author_insertions["Insertions"], name="Insertions"), row=1, col=2)
-
-        AuthorStats.sort_by_deletions(self.author_stats)
-        dataframe_author_deletions = pd.DataFrame({
-            "Authors": [s.name for s in self.author_stats],
-            "Deletions": [s.deletions for s in self.author_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_author_deletions["Authors"], y=dataframe_author_deletions["Deletions"], name="Deletions"), row=2, col=1)
-
-        AuthorStats.sort_by_lines(self.author_stats)
-        dataframe_author_lines = pd.DataFrame({
-            "Authors": [s.name for s in self.author_stats],
-            "Lines": [s.lines for s in self.author_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_author_lines["Authors"], y=dataframe_author_lines["Lines"], name="Lines"), row=2, col=2)
-
-        AuthorStats.sort_by_files(self.author_stats)
-        dataframe_author_files = pd.DataFrame({
-            "Authors": [s.name for s in self.author_stats],
-            "Files": [s.files for s in self.author_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_author_files["Authors"], y=dataframe_author_files["Files"], name="Files"), row=3, col=1)
-
-        fig.update_layout(
-            title_text="Repo Statistics",
-            height=1400,
-            width=1800,
-            margin=dict(l=50, r=50, t=100, b=50)
-        )
-        fig.show(renderer="browser")
-
-    def plot_files_stats(self):
-        fig = make_subplots(
-            rows=1, cols=1,
-            subplot_titles=(
-                "Changes Count", "Files"
-            )
-        )
-
-        FileStats.sort_by_changes(self.file_stats)
-        dataframe_files = pd.DataFrame({
-            "Files": [s.name for s in self.file_stats],
-            "Changes": [s.changes for s in self.file_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_files["Files"], y=dataframe_files["Changes"], name="Changes"), row=1, col=1)
-
-        fig.update_layout(
-            title_text="Repo Statistics"
-        )
-        fig.show(renderer="browser")
+    def init_dataframe_commits(self, commit_stats: list[CommitStats]):
+        self.commit_stats = commit_stats
 
     def get_authors_html(self):
         fig = make_subplots(
@@ -154,3 +84,47 @@ class Plot:
         })
         fig.add_trace(go.Bar(x=dataframe_files["Files"], y=dataframe_files["Changes"], name="Changes"), row=1, col=1)
         return fig.to_html(full_html=False, include_plotlyjs=False)
+
+    def get_commits_html(self):
+        # Creiamo un DataFrame dai CommitStats
+        df = pd.DataFrame({
+            "Author": [s.author_name for s in self.commit_stats],
+            "Date": [pd.to_datetime(s.date) for s in self.commit_stats],  # parsing date
+            "Commit": [s.name for s in self.commit_stats]
+        })
+
+        # Raggruppiamo per autore e data, contiamo i commit
+        commits_per_day = (
+            df.groupby(["Author", "Date"])
+            .size()
+            .reset_index(name="CommitCount")
+        )
+
+        # Ordiniamo per data (utile per visualizzazione)
+        commits_per_day = commits_per_day.sort_values(by="Date")
+
+        # Creiamo la figura
+        fig = go.Figure()
+
+        # Una linea per ogni autore
+        for author, data in commits_per_day.groupby("Author"):
+            fig.add_trace(
+                go.Scatter(
+                    x=data["Date"],
+                    y=data["CommitCount"],
+                    mode="lines+markers",
+                    name=author
+                )
+            )
+
+        fig.update_layout(
+            title="Commits by author over time",
+            xaxis_title="Date",
+            yaxis_title="Commits",
+            template="plotly_white"
+        )
+
+        return fig.to_html(full_html=False, include_plotlyjs=False)
+
+
+
