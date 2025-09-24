@@ -5,10 +5,10 @@ FILE_PATH: str = "repo_stats.html"
 class Dashboard():
 
     @staticmethod
-    def generate_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, last_update_per_file: list[str]):
+    def generate_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, branches_html, comulative_branches_html, last_update_per_file: list[str]):
         with open(FILE_PATH, "w") as f:
             data_table = Dashboard.__list_to_html_table(last_update_per_file)
-            html_page = Dashboard.__build_and_get_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, data_table)
+            html_page = Dashboard.__build_and_get_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, branches_html, comulative_branches_html, data_table)
             f.write(html_page)
 
     @staticmethod
@@ -21,7 +21,6 @@ class Dashboard():
         header, *body = rows
         col_count = len(header)
 
-        # correggi ogni riga: aggiungi celle vuote se mancano colonne
         normalized_body = [row + [""] * (col_count - len(row)) for row in body]
 
         table_html = "<table id='myTable' class='display'>\n"
@@ -34,7 +33,7 @@ class Dashboard():
         return table_html
 
     @staticmethod
-    def __build_and_get_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, data_table):
+    def __build_and_get_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, branches_html, comulative_branches_html, data_table):
         html_page = f"""
 <!DOCTYPE html>
 <html>
@@ -43,8 +42,7 @@ class Dashboard():
     <meta charset="UTF-8">
 
     <!-- DataTables CSS + JS -->
-    <link rel="stylesheet"
-          href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 
@@ -92,6 +90,8 @@ class Dashboard():
         <h2> Stats per author over time </h2>
         {commits_html}
         {comulative_commits_html}
+        {branches_html}
+        {comulative_branches_html}
     </div>
 
     <div id="Files" class="tabcontent">

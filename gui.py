@@ -57,10 +57,11 @@ class GUI(ctk.CTk):
             repo = RepoManagement(repo_path, self)
             repo.obtain_all_info_from_repo()
         except Exception as e:
-            self.write_to_logbox(f"Errore: {e.with_traceback}") #TODO: fixhere
+            self.write_to_logbox(f"{e}") #TODO: fixhere
 
     def write_to_logbox(self, message: str):
         """Thread-safe"""
+        message = str(message).encode("utf-8", errors="replace").decode("utf-8")
         self.after(0, lambda: self._append_to_log(message))
 
     def _append_to_log(self, message: str):

@@ -6,9 +6,9 @@ name: Gio, {[commit: adgasd12, filesedited: 5, date: 2025-09-13, file_edited: ['
 
 '''
 
-
 class CommitStats():
     name: str
+    author_name: str
     files_edited: int
     date: str
 

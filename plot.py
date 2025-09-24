@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from entities.author_stats import AuthorStats
+from entities.branch_stats import BranchStats
 from entities.commit_stats import CommitStats
 from entities.file_stats import FileStats
 
@@ -18,6 +19,9 @@ class Plot:
 
     def init_dataframe_commits(self, commit_stats: list[CommitStats]):
         self.commit_stats = commit_stats
+
+    def init_dataframe_branches(self, branch_stats: list[BranchStats]):
+        self.branch_stats = branch_stats
 
     def get_authors_html(self):
         fig = make_subplots(
@@ -86,27 +90,22 @@ class Plot:
         return fig.to_html(full_html=False, include_plotlyjs=False)
 
     def get_commits_html(self):
-        # Creiamo un DataFrame dai CommitStats
         df = pd.DataFrame({
             "Author": [s.author_name for s in self.commit_stats],
             "Date": [pd.to_datetime(s.date) for s in self.commit_stats],  # parsing date
             "Commit": [s.name for s in self.commit_stats]
         })
 
-        # Raggruppiamo per autore e data, contiamo i commit
         commits_per_day = (
             df.groupby(["Author", "Date"])
             .size()
             .reset_index(name="CommitCount")
         )
 
-        # Ordiniamo per data (utile per visualizzazione)
         commits_per_day = commits_per_day.sort_values(by="Date")
 
-        # Creiamo la figura
         fig = go.Figure()
 
-        # Una linea per ogni autore
         for author, data in commits_per_day.groupby("Author"):
             fig.add_trace(
                 go.Scatter(
@@ -132,26 +131,22 @@ class Plot:
 
 
     def get_commits_cumulative_html(self):
-        # Creiamo un DataFrame dai CommitStats
         df = pd.DataFrame({
             "Author": [s.author_name for s in self.commit_stats],
             "Date": [pd.to_datetime(s.date) for s in self.commit_stats],
             "Commit": [s.name for s in self.commit_stats]
         })
 
-        # Raggruppiamo per autore e data, contiamo i commit
         commits_per_day = (
             df.groupby(["Author", "Date"])
             .size()
             .reset_index(name="CommitCount")
         )
 
-        # Ordiniamo per data
         commits_per_day = commits_per_day.sort_values(by="Date")
 
         fig = go.Figure()
 
-        # Aggiungiamo cumulativo per ogni autore
         for author, data in commits_per_day.groupby("Author"):
             data = data.sort_values(by="Date")
             data["CumulativeCommits"] = data["CommitCount"].cumsum()
@@ -165,7 +160,6 @@ class Plot:
                 )
             )
 
-        # Totale cumulativo (linea aggiuntiva)
         total_data = commits_per_day.groupby("Date")["CommitCount"].sum().sort_index().cumsum()
         fig.add_trace(
             go.Scatter(
@@ -181,6 +175,102 @@ class Plot:
             title="Cumulative Commits Over Time",
             xaxis_title="Date",
             yaxis_title="Cumulative Commits",
+            template="plotly_white",
+            autosize=True,
+            width=None,
+            height=600,
+            margin=dict(l=50, r=50, t=80, b=50)
+        )
+
+        return fig.to_html(full_html=False, include_plotlyjs=False)
+
+
+    def get_branches_html(self):
+        df = pd.DataFrame({
+            "Author": [s.author_name for s in self.branch_stats],
+            "Date": [pd.to_datetime(s.date) for s in self.branch_stats],  # parsing date
+            "Branch": [s.name for s in self.branch_stats]
+        })
+
+        branches_per_day = (
+            df.groupby(["Author", "Date"])
+            .size()
+            .reset_index(name="BranchCount")
+        )
+
+        branches_per_day = branches_per_day.sort_values(by="Date")
+
+        fig = go.Figure()
+
+        for author, data in branches_per_day.groupby("Author"):
+            fig.add_trace(
+                go.Scatter(
+                    x=data["Date"],
+                    y=data["BranchCount"],
+                    mode="lines+markers",
+                    name=author
+                )
+            )
+
+        fig.update_layout(
+            title="Branch by author over time",
+            xaxis_title="Date",
+            yaxis_title="Branch",
+            template="plotly_white",
+            autosize=True,
+            width=None,
+            height=600,
+            margin=dict(l=50, r=50, t=80, b=50)
+        )
+
+        return fig.to_html(full_html=False, include_plotlyjs=False)
+
+
+    def get_branches_cumulative_html(self):
+        df = pd.DataFrame({
+            "Author": [s.author_name for s in self.branch_stats],
+            "Date": [pd.to_datetime(s.date) for s in self.branch_stats],
+            "Branch": [s.name for s in self.branch_stats]
+        })
+
+        branches_per_day = (
+            df.groupby(["Author", "Date"])
+            .size()
+            .reset_index(name="BranchCount")
+        )
+
+        branches_per_day = branches_per_day.sort_values(by="Date")
+
+        fig = go.Figure()
+
+        for author, data in branches_per_day.groupby("Author"):
+            data = data.sort_values(by="Date")
+            data["CumulativeBranches"] = data["BranchCount"].cumsum()
+
+            fig.add_trace(
+                go.Scatter(
+                    x=data["Date"],
+                    y=data["CumulativeBranches"],
+                    mode="lines+markers",
+                    name=author
+                )
+            )
+
+        total_data = branches_per_day.groupby("Date")["BranchCount"].sum().sort_index().cumsum()
+        fig.add_trace(
+            go.Scatter(
+                x=total_data.index,
+                y=total_data.values,
+                mode="lines",
+                name="Total Branches",
+                line=dict(color="black", dash="dot")
+            )
+        )
+
+        fig.update_layout(
+            title="Cumulative Branches Over Time",
+            xaxis_title="Date",
+            yaxis_title="Cumulative Branches",
             template="plotly_white",
             autosize=True,
             width=None,
