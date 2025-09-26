@@ -37,35 +37,35 @@ class Plot:
 
         AuthorStats.sort_by_commits(self.author_stats)
         dataframe_author_commits = pd.DataFrame({
-            "Authors": [s.name for s in self.author_stats],
+            "Authors": [s.author.main_username for s in self.author_stats],
             "Commits": [s.commits for s in self.author_stats]
         })
         fig.add_trace(go.Bar(x=dataframe_author_commits["Authors"], y=dataframe_author_commits["Commits"], name="Commits"), row=1, col=1)
 
         AuthorStats.sort_by_insertions(self.author_stats)
         dataframe_author_insertions = pd.DataFrame({
-            "Authors": [s.name for s in self.author_stats],
+            "Authors": [s.author.main_username for s in self.author_stats],
             "Insertions": [s.insertions for s in self.author_stats]
         })
         fig.add_trace(go.Bar(x=dataframe_author_insertions["Authors"], y=dataframe_author_insertions["Insertions"], name="Insertions"), row=1, col=2)
 
         AuthorStats.sort_by_deletions(self.author_stats)
         dataframe_author_deletions = pd.DataFrame({
-            "Authors": [s.name for s in self.author_stats],
+            "Authors": [s.author.main_username for s in self.author_stats],
             "Deletions": [s.deletions for s in self.author_stats]
         })
         fig.add_trace(go.Bar(x=dataframe_author_deletions["Authors"], y=dataframe_author_deletions["Deletions"], name="Deletions"), row=2, col=1)
 
         AuthorStats.sort_by_lines(self.author_stats)
         dataframe_author_lines = pd.DataFrame({
-            "Authors": [s.name for s in self.author_stats],
+            "Authors": [s.author.main_username for s in self.author_stats],
             "Lines": [s.lines for s in self.author_stats]
         })
         fig.add_trace(go.Bar(x=dataframe_author_lines["Authors"], y=dataframe_author_lines["Lines"], name="Lines"), row=2, col=2)
 
         AuthorStats.sort_by_files(self.author_stats)
         dataframe_author_files = pd.DataFrame({
-            "Authors": [s.name for s in self.author_stats],
+            "Authors": [s.author.main_username for s in self.author_stats],
             "Files": [s.files for s in self.author_stats]
         })
         fig.add_trace(go.Bar(x=dataframe_author_files["Authors"], y=dataframe_author_files["Files"], name="Files"), row=3, col=1)
@@ -91,7 +91,7 @@ class Plot:
 
     def get_commits_html(self):
         df = pd.DataFrame({
-            "Author": [s.author_name for s in self.commit_stats],
+            "Author": [s.author.main_username for s in self.commit_stats],
             "Date": [pd.to_datetime(s.date) for s in self.commit_stats],  # parsing date
             "Commit": [s.name for s in self.commit_stats]
         })
@@ -132,7 +132,7 @@ class Plot:
 
     def get_commits_cumulative_html(self):
         df = pd.DataFrame({
-            "Author": [s.author_name for s in self.commit_stats],
+            "Author": [s.author.main_username for s in self.commit_stats],
             "Date": [pd.to_datetime(s.date) for s in self.commit_stats],
             "Commit": [s.name for s in self.commit_stats]
         })
@@ -187,7 +187,7 @@ class Plot:
 
     def get_branches_html(self):
         df = pd.DataFrame({
-            "Author": [s.author_name for s in self.branch_stats],
+            "Author": [s.author.main_username for s in self.branch_stats],
             "Date": [pd.to_datetime(s.date) for s in self.branch_stats],  # parsing date
             "Branch": [s.name for s in self.branch_stats]
         })
@@ -228,7 +228,7 @@ class Plot:
 
     def get_branches_cumulative_html(self):
         df = pd.DataFrame({
-            "Author": [s.author_name for s in self.branch_stats],
+            "Author": [s.author.main_username for s in self.branch_stats],
             "Date": [pd.to_datetime(s.date) for s in self.branch_stats],
             "Branch": [s.name for s in self.branch_stats]
         })

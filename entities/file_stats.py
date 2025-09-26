@@ -1,20 +1,18 @@
-class FileStats():
-    name: str
-    changes: int
-    last_update: str
-    last_author: str
+from entities.author import Author
 
-    def __init__(self, name: str, changes: int, last_update: str, last_author: str):
+class FileStats():
+
+    def __init__(self, name: str, changes: int, last_update: str, last_author: Author) -> None:
         self.name = name
         self.changes = changes
         self.last_update = last_update
         self.last_author = last_author
 
     def __str__(self):
-        return f"name: {self.name}, changes: {self.changes}, last_update: {self.last_update}, last_author: {self.last_author}"
+        return f"name: {self.name}, changes: {self.changes}, last_update: {self.last_update}, last_author: {self.last_author.main_username}"
 
     def to_csv(self):
-        return f"{self.name},{self.changes},{self.last_update},{self.last_author}"
+        return f"{self.name},{self.changes},{self.last_update},{self.last_author.main_username}"
 
     @staticmethod
     def csv_header():

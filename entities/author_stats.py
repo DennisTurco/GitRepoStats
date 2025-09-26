@@ -1,13 +1,9 @@
-class AuthorStats():
-    name: str
-    commits: int
-    insertions: int
-    deletions: int
-    lines: int
-    files: int
+from entities.author import Author
 
-    def __init__(self, name: str, commits: int, insertions: int, deletions: int, lines: int, files: int):
-        self.name = name
+class AuthorStats():
+
+    def __init__(self, author: Author, commits: int, insertions: int, deletions: int, lines: int, files: int):
+        self.author = author
         self.commits = commits
         self.insertions = insertions
         self.deletions = deletions
@@ -15,10 +11,10 @@ class AuthorStats():
         self.files = files
 
     def __str__(self):
-        return f"name: {self.name}, commits: {self.commits}, insertions: {self.insertions}, deletions: {self.deletions}, lines: {self.lines}, files: {self.files}"
+        return f"author: {self.author.main_username}, commits: {self.commits}, insertions: {self.insertions}, deletions: {self.deletions}, lines: {self.lines}, files: {self.files}"
 
     def to_csv(self):
-        return f"{self.name},{self.commits},{self.insertions},{self.deletions},{self.lines},{self.files}"
+        return f"{self.author.main_username},{self.commits},{self.insertions},{self.deletions},{self.lines},{self.files}"
 
     @staticmethod
     def csv_header():
