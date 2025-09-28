@@ -3,7 +3,7 @@
 
 ## Description
 
-**Git Repo Stats** is a desktop application with a modern and user-friendly graphical interface that allows you to generate reports and analyze key information about the lifecycle of the project you are scanning.
+**Git Repo Stats** is a desktop application with a modern and user-friendly graphical interface that allows you to generate reports and analyze key information about the lifecycle of the github project you are scanning.
 
 **Git Repo Stats** allows you to:
 

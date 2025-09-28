@@ -89,6 +89,28 @@ class Plot:
         fig.add_trace(go.Bar(x=dataframe_files["Files"], y=dataframe_files["Changes"], name="Changes"), row=1, col=1)
         return fig.to_html(full_html=False, include_plotlyjs=False)
 
+    def get_languages_chart(self):
+        df_lang = pd.DataFrame({
+            "Language": [s.file_language for s in self.file_stats]
+        })
+
+        lang_counts = (
+            df_lang.value_counts()
+            .reset_index(name="Count")
+            .rename(columns={"Language": "Language"})
+            .head(20)
+        )
+
+        fig = go.Figure(
+            data=[go.Pie(
+                labels=lang_counts["Language"],
+                values=lang_counts["Count"],
+                hole=0.3
+            )]
+        )
+        fig.update_layout(title="Top 30 Languages")
+        return fig.to_html(full_html=False, include_plotlyjs=False)
+
     def get_commits_html(self):
         df = pd.DataFrame({
             "Author": [s.author.main_username for s in self.commit_stats],

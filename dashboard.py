@@ -1,14 +1,17 @@
 import webbrowser
 
+from entities.data import Data
+
 FILE_PATH: str = "repo_stats.html"
 
 class Dashboard():
 
     @staticmethod
-    def generate_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, branches_html, comulative_branches_html, last_update_per_file: list[str]):
+    def generate_html_page(data: Data):
         with open(FILE_PATH, "w") as f:
-            data_table = Dashboard.__list_to_html_table(last_update_per_file)
-            html_page = Dashboard.__build_and_get_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, branches_html, comulative_branches_html, data_table)
+            data_table_files = Dashboard.__list_to_html_table(data.csv_file_stats, "tableFiles")
+            data_table_branches = Dashboard.__list_to_html_table(data.csv_branches_stats, "tableBranches")
+            html_page = Dashboard.__build_and_get_html_page(data, data_table_files, data_table_branches)
             f.write(html_page)
 
     @staticmethod
@@ -16,14 +19,14 @@ class Dashboard():
         webbrowser.open(FILE_PATH)
 
     @staticmethod
-    def __list_to_html_table(data: list[str]) -> str:
+    def __list_to_html_table(data: list[str], table_id: str) -> str:
         rows = [row.split(",") for row in data]
         header, *body = rows
         col_count = len(header)
 
         normalized_body = [row + [""] * (col_count - len(row)) for row in body]
 
-        table_html = "<table id='myTable' class='display'>\n"
+        table_html = f"<table id='{table_id}' class='display'>\n"
         table_html += "  <thead><tr>" + "".join(f"<th>{col}</th>" for col in header) + "</tr></thead>\n"
         table_html += "  <tbody>\n"
         for row in normalized_body:
@@ -32,8 +35,9 @@ class Dashboard():
 
         return table_html
 
+
     @staticmethod
-    def __build_and_get_html_page(repo_name, authors_html, files_html, commits_html, comulative_commits_html, branches_html, comulative_branches_html, data_table):
+    def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str):
         html_page = f"""
 <!DOCTYPE html>
 <html>
@@ -48,7 +52,12 @@ class Dashboard():
 
     <script>
         $(document).ready(function() {{
-            $('#myTable').DataTable({{
+            $('#tableFiles').DataTable({{
+                "pageLength": 20,
+                "lengthMenu": [5, 10, 20, 50, 100],
+                "order": []
+            }});
+            $('#tableBranches').DataTable({{
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
                 "order": []
@@ -77,7 +86,7 @@ class Dashboard():
     </style>
 </head>
 <body>
-    <h1>Repo Statistics - {repo_name}</h1>
+    <h1>Repo Statistics - {data.repo_name}</h1>
     <div class="tab">
         <button class="tablinks" onclick="openTab(event, 'Authors')" id="defaultOpen">Authors</button>
         <button class="tablinks" onclick="openTab(event, 'Files')">Files</button>
@@ -85,21 +94,25 @@ class Dashboard():
 
     <div id="Authors" class="tabcontent">
         <h2> General stats per author </h2>
-        {authors_html}
+        {data.chart_authors_html}
 
         <h2> Stats per author over time </h2>
-        {commits_html}
-        {comulative_commits_html}
-        {branches_html}
-        {comulative_branches_html}
+        {data.chart_commits_html}
+        {data.chart_comulative_commits_html}
+        {data.chart_branches_html}
+        {data.chart_comulative_branches_html}
+
+        <h3> Branches List </h3>
+        {data_table_branches}
     </div>
 
     <div id="Files" class="tabcontent">
         <h2> Stats per file </h2>
-        {files_html}
+        {data.chart_files_html}
+        {data.chart_languages_html}
 
         <h2> Last update per file </h2>
-        {data_table}
+        {data_table_files}
     </div>
 
     <script>

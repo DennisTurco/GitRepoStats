@@ -1,7 +1,9 @@
+import os
 from git import Repo
 from dashboard import Dashboard
 from entities.author import Author
 from entities.commit_stats import CommitStats
+from entities.data import Data
 from logger import Logger
 from plot import Plot
 
@@ -80,7 +82,7 @@ class RepoManagement:
             Logger.write_log(f"Getting file stats for {file}", log_box=self.log_box)
             stats.append(self.__get_file_stats(file, authors))
 
-        # rimuovi file senza modifiche
+        # remuving files without edits
         stats = [stat for stat in stats if stat.changes != 0]
 
         Logger.write_log(f"File stats list obtained ({len(stats)} files)", log_box=self.log_box)
@@ -159,7 +161,16 @@ class RepoManagement:
 
                 last_author = self.__find_author(commit.author.email, authors)
 
-        return FileStats(file_name, changes, last_update, last_author)
+        file_extension = self.__get_extension_from_file(file_name)
+        if file_extension == "":
+            file_extension = "Other"
+        return FileStats(file_name, changes, last_update, last_author,file_extension)
+
+
+    def __get_extension_from_file(self, file_path: str) -> str:
+        _, ext = os.path.splitext(file_path)
+        return ext.lstrip(".").lower()
+
 
     def __find_author(self, email: str, authors: list[Author]) -> Author:
         email = email.lower()
@@ -180,13 +191,18 @@ class RepoManagement:
 
         authors_html = plot.get_authors_html()
         files_html = plot.get_files_html()
+        languages_html = plot.get_languages_chart()
         commits_html = plot.get_commits_html()
         comulative_commits_html = plot.get_commits_cumulative_html()
         branches_html = plot.get_branches_html()
         comulative_branches_html = plot.get_branches_cumulative_html()
+        csv_files = FileStats.to_csv_data_list(file_stats)
+        csv_branches = BranchStats.to_csv_data_list(branches_stats)
+
+        data_to_plot = Data(self.repo_name, authors_html, files_html, languages_html, commits_html, comulative_commits_html, branches_html, comulative_branches_html, csv_files, csv_branches)
 
         Logger.write_log("Generating dashboard file .html", log_box=self.log_box)
-        Dashboard.generate_html_page(self.repo_name, authors_html, files_html, commits_html, comulative_commits_html, branches_html, comulative_branches_html, FileStats.to_csv_data_list(file_stats))
+        Dashboard.generate_html_page(data_to_plot)
 
         Logger.write_log(message="Opening Dashboard", log_box=self.log_box)
         Dashboard.open_result_website()

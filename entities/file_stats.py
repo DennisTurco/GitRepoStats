@@ -2,21 +2,22 @@ from entities.author import Author
 
 class FileStats():
 
-    def __init__(self, name: str, changes: int, last_update: str, last_author: Author) -> None:
+    def __init__(self, name: str, changes: int, last_update: str, last_author: Author, file_language: str) -> None:
         self.name = name
         self.changes = changes
         self.last_update = last_update
         self.last_author = last_author
+        self.file_language = file_language
 
     def __str__(self):
-        return f"name: {self.name}, changes: {self.changes}, last_update: {self.last_update}, last_author: {self.last_author.main_username}"
+        return f"name: {self.name}, changes: {self.changes}, last_update: {self.last_update}, last_author: {self.last_author.main_username}, language: {self.file_language}"
 
     def to_csv(self):
-        return f"{self.name},{self.changes},{self.last_update},{self.last_author.main_username}"
+        return f"{self.name},{self.changes},{self.last_update},{self.last_author.main_username},{self.file_language}"
 
     @staticmethod
     def csv_header():
-        return "File,Changes,LastUpdate,LastAuthor"
+        return "File,Changes,LastUpdate,LastAuthor,Language"
 
     @staticmethod
     def to_csv_data_list(stats: list["FileStats"], header: bool = True) -> list[str]:
