@@ -8,7 +8,7 @@ class Dashboard():
 
     @staticmethod
     def generate_html_page(data: Data) -> None:
-        with open(FILE_PATH, "w") as f:
+        with open(FILE_PATH, "w", encoding="utf-8") as f:
             data_table_files = Dashboard.__list_to_html_table(data.csv_file_stats, "tableFiles")
             data_table_branches = Dashboard.__list_to_html_table(data.csv_branches_stats, "tableBranches")
             html_page = Dashboard.__build_and_get_html_page(data, data_table_files, data_table_branches)
