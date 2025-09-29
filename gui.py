@@ -82,13 +82,10 @@ class GUI(ctk.CTk):
         self.after(0, lambda: self._append_to_log(message))
 
     def _append_to_log(self, message: str):
-        # Inserisci il messaggio
         self.log_box.insert(tk.END, message + "\n")
 
-        # Trova l'inizio della riga appena inserita
         start_index = self.log_box.index("end-2c linestart")
 
-        # Colora la data (fino al secondo spazio)
         first_space = message.find(" ")
         second_space = message.find(" ", first_space + 1)
         date_end_index = second_space if second_space != -1 else first_space
@@ -99,7 +96,6 @@ class GUI(ctk.CTk):
                 f"{start_index} + {date_end_index}c"
             )
 
-        # Colora il tipo di log ([INFO], [DEBUG], [WARN], [ERROR])
         log_types = ["[INFO]", "[DEBUG]", "[WARN]", "[ERROR]"]
         for log_type in log_types:
             type_start = message.find(log_type)

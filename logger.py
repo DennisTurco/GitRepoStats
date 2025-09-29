@@ -33,15 +33,7 @@ class Logger:
         raise KeyError(f"Key '{key}' not found in Logger.LogType")
 
     @staticmethod
-    def write_log(
-        message: str,
-        log_type: Optional["Logger.LogType"] = None,
-        log_box=None,
-        exception: Optional[Exception] = None
-    ):
-        """
-        Write a log entry to the file, always adding it to the top of the log file.
-        """
+    def write_log(message: str, log_type: Optional["Logger.LogType"] = None, log_box=None, exception: Optional[Exception] = None):
 
         if log_type is None:
             log_type = Logger.LogType.INFO
@@ -52,7 +44,6 @@ class Logger:
                 f"Allowed types: {', '.join(Logger.LogType.__members__.keys())}"
             )
 
-        # Check if this log type is enabled
         if not Logger.LogTypeEnabled.get(log_type, True):
             return
 
@@ -65,17 +56,14 @@ class Logger:
 
         safe_message = new_log_entry.strip()
 
-        # --- Console output ---
         try:
             sys.stdout.buffer.write((safe_message + "\n").encode("utf-8", errors="replace"))
         except Exception:
             print(safe_message.encode("ascii", errors="replace").decode("ascii"))
 
-        # --- GUI log box ---
         if log_box is not None:
             log_box.write_to_logbox(safe_message)
 
-        # --- File logging ---
         if not os.path.exists(os.path.dirname(FILE_PATH)):
             os.makedirs(os.path.dirname(FILE_PATH))
 

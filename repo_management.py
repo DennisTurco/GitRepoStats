@@ -29,9 +29,7 @@ class RepoManagement:
 
 
     def obtain_all_info_from_repo(self) -> None:
-        # to obtain only the unique author without duplications
-        authors = self.__get_authors()
-
+        authors = self.__get_authors() # to obtain only the unique author without duplications
         author_stats = self.__get_authors_stats_list(authors)
         file_stats = self.__get_files_stats_list(authors)
         commits_stats = self.__get_commits_stats_list(authors)
@@ -55,11 +53,16 @@ class RepoManagement:
         Logger.write_log("Getting authors...", log_box=self.log_box)
 
         authors: list[Author] = []
+        noreply_authors: list[Author] = []
 
         for commit in self._repo_obj.iter_commits():
             email = commit.author.email.lower()
             name = commit.author.name.strip()
             new_author = Author(email, name)
+
+            if "noreply.github.com" in email:
+                noreply_authors.append(new_author)
+                continue
 
             pos = new_author.get_pos_inside(authors)
 
@@ -68,6 +71,19 @@ class RepoManagement:
                 authors[pos].add_username_alias_if_not_saved(name)
             else:
                 authors.append(new_author)
+                Logger.write_log(f"User: {new_author.main_username} ({new_author.main_email})", log_box=self.log_box)
+
+        # sanifief github users
+        for noreply in noreply_authors:
+            main_found = False
+            for author in authors:
+                if author.main_username.lower() in noreply.main_email or author.main_username == noreply.main_username:
+                    author.add_email_if_not_saved(noreply.main_email)
+                    author.add_username_alias_if_not_saved(noreply.main_username)
+                    main_found = True
+            if not main_found:
+                authors.append(noreply)
+                Logger.write_log(f"Main email not found for user: {noreply.main_username} ({noreply.main_email})", log_box=self.log_box, log_type=Logger.LogType.WARN)
 
         return authors
 
