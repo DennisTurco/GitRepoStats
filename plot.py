@@ -2,10 +2,10 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from entities.author_stats import AuthorStats
-from entities.branch_stats import BranchStats
-from entities.commit_stats import CommitStats
-from entities.file_stats import FileStats
+from entities.stats.author_stats import AuthorStats
+from entities.stats.branch_stats import BranchStats
+from entities.stats.commit_stats import CommitStats
+from entities.stats.file_stats import FileStats
 
 class Plot:
     def __init__(self):

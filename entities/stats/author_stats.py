@@ -10,18 +10,18 @@ class AuthorStats():
         self.lines = lines
         self.files = files
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"author: {self.author.main_username}, commits: {self.commits}, insertions: {self.insertions}, deletions: {self.deletions}, lines: {self.lines}, files: {self.files}"
 
-    def to_csv(self):
+    def to_csv(self) -> str:
         return f"{self.author.main_username},{self.commits},{self.insertions},{self.deletions},{self.lines},{self.files}"
 
     @staticmethod
-    def csv_header():
+    def csv_header() -> str:
         return "Author,Commits,Insertions,Deletions,Lines,Files"
 
     @staticmethod
-    def to_csv_data_list(stats: list["AuthorStats"], header: bool = True):
+    def to_csv_data_list(stats: list["AuthorStats"], header: bool = True) -> list[str]:
         data = [AuthorStats.csv_header()] if header else []
         data += [stat.to_csv() for stat in stats]
         return data

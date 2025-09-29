@@ -8,14 +8,14 @@ class BranchStats():
         self.commits = commits
         self.date = date.strftime("%Y-%m")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"name: {self.name}, author: {self.author.main_username}, commits: {self.commits}, date: {self.date}"
 
-    def to_csv(self):
+    def to_csv(self) -> str:
         return f"{self.name},{self.author.main_username},{self.date}"
 
     @staticmethod
-    def csv_header():
+    def csv_header() -> str:
         return "Branch,Author,Date"
 
     @staticmethod

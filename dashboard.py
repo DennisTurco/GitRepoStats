@@ -7,7 +7,7 @@ FILE_PATH: str = "repo_stats.html"
 class Dashboard():
 
     @staticmethod
-    def generate_html_page(data: Data):
+    def generate_html_page(data: Data) -> None:
         with open(FILE_PATH, "w") as f:
             data_table_files = Dashboard.__list_to_html_table(data.csv_file_stats, "tableFiles")
             data_table_branches = Dashboard.__list_to_html_table(data.csv_branches_stats, "tableBranches")
@@ -15,7 +15,7 @@ class Dashboard():
             f.write(html_page)
 
     @staticmethod
-    def open_result_website():
+    def open_result_website() -> None:
         webbrowser.open(FILE_PATH)
 
     @staticmethod
@@ -37,7 +37,7 @@ class Dashboard():
 
 
     @staticmethod
-    def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str):
+    def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str) -> str:
         html_page = f"""
 <!DOCTYPE html>
 <html>
@@ -87,6 +87,7 @@ class Dashboard():
 </head>
 <body>
     <h1>Repo Statistics - {data.repo_name}</h1>
+    <h3>Period: {data.period}</h3>
     <div class="tab">
         <button class="tablinks" onclick="openTab(event, 'Authors')" id="defaultOpen">Authors</button>
         <button class="tablinks" onclick="openTab(event, 'Files')">Files</button>

@@ -17,10 +17,10 @@ class Author:
                 return i
         return -1
 
-    def add_username_alias_if_not_saved(self, username: str):
+    def add_username_alias_if_not_saved(self, username: str) -> None:
         if username not in self.usernames:
             self.usernames.append(username)
 
-    def add_email_if_not_saved(self, main_email: str):
+    def add_email_if_not_saved(self, main_email: str) -> None:
         if main_email not in self.emails:
             self.emails.append(main_email)
