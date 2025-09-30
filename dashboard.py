@@ -11,7 +11,8 @@ class Dashboard():
         with open(FILE_PATH, "w", encoding="utf-8") as f:
             data_table_files = Dashboard.__list_to_html_table(data.csv_file_stats, "tableFiles")
             data_table_branches = Dashboard.__list_to_html_table(data.csv_branches_stats, "tableBranches")
-            html_page = Dashboard.__build_and_get_html_page(data, data_table_files, data_table_branches)
+            data_table_code_complexity = Dashboard.__list_to_html_table(data.csv_code_complexity, "tableCodeComplexity")
+            html_page = Dashboard.__build_and_get_html_page(data, data_table_files, data_table_branches, data_table_code_complexity)
             f.write(html_page)
 
     @staticmethod
@@ -37,7 +38,7 @@ class Dashboard():
 
 
     @staticmethod
-    def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str) -> str:
+    def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str, data_table_code_complexity: str) -> str:
         html_page = f"""
 <!DOCTYPE html>
 <html>
@@ -58,6 +59,11 @@ class Dashboard():
                 "order": []
             }});
             $('#tableBranches').DataTable({{
+                "pageLength": 20,
+                "lengthMenu": [5, 10, 20, 50, 100],
+                "order": []
+            }})
+            $('#tableCodeComplexity').DataTable({{
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
                 "order": []
@@ -91,6 +97,7 @@ class Dashboard():
     <div class="tab">
         <button class="tablinks" onclick="openTab(event, 'Authors')" id="defaultOpen">Authors</button>
         <button class="tablinks" onclick="openTab(event, 'Files')">Files</button>
+        <button class="tablinks" onclick="openTab(event, 'CodeAnalysis')">Code Analysis</button>
     </div>
 
     <div id="Authors" class="tabcontent">
@@ -99,9 +106,9 @@ class Dashboard():
 
         <h2> Stats per author over time </h2>
         {data.chart_commits_html}
-        {data.chart_comulative_commits_html}
+        {data.chart_cumulative_commits_html}
         {data.chart_branches_html}
-        {data.chart_comulative_branches_html}
+        {data.chart_cumulative_branches_html}
 
         <h3> Branches List </h3>
         {data_table_branches}
@@ -114,6 +121,32 @@ class Dashboard():
 
         <h2> Last update per file </h2>
         {data_table_files}
+    </div>
+
+    <div id="CodeAnalysis" class="tabcontent">
+        <h2> Code Complexity </h2>
+        Data description:
+        <ul>
+            <li><b>NLOC</b>: effective lines of code (excluding comments/blank)</li>
+            <li><b>CCN</b>: cyclomatic Complexity Number.(complex if > 10)</li>
+            <li><b>Token</b>: number of tokens in the function</li>
+            <li><b>Param</b>: number of function parameters</li>
+            <li><b>Length</b>: total function length in lines (similar to nloc but including also declarations, exc...)</li>
+            <li><b>Function</b>: function or method name</li>
+            <li><b>Lines</b>: line range in the source file</li>
+            <li><b>File</b>: file path containing the function</li>
+        </ul>
+        <h6>You can see Lizard documentation: <a href="https://github.com/terryyin/lizard target='_blank'">here</a></h6>
+        <p></p>
+        Status values:
+        <ul>
+            <li>✅: if all checks are passed (nloc <= 30 and ccn <= 10 and token <= 100 and param <= 4)</li>
+            <li>⚠️: if something needs attentions (nloc <= 100 and ccn <= 20 and token <= 500 and param <= 7)</li>
+            <li>❌: if something is at risk</li>
+        </ul>
+        you can filter by inserting the emoji in the table search bar.
+        {data_table_code_complexity}
+
     </div>
 
     <script>
