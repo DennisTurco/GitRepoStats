@@ -1,16 +1,14 @@
+from dataclasses import dataclass
 from entities.author import Author
 
+@dataclass
 class FileStats():
 
-    def __init__(self, name: str, changes: int, last_update: str, last_author: Author, file_language: str) -> None:
-        self.name = name
-        self.changes = changes
-        self.last_update = last_update
-        self.last_author = last_author
-        self.file_language = file_language
-
-    def __str__(self) -> str:
-        return f"name: {self.name}, changes: {self.changes}, last_update: {self.last_update}, last_author: {self.last_author.main_username}, language: {self.file_language}"
+    name: str
+    changes: int
+    last_update: str
+    last_author: Author
+    file_language: str
 
     def to_csv(self) -> str:
         return f"{self.name},{self.changes},{self.last_update},{self.last_author.main_username},{self.file_language}"

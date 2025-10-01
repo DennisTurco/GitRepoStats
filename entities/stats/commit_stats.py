@@ -1,10 +1,3 @@
-'''
-valutare se ha senso crera euna struttura così, in questo caso probabilmente ridurrei il costo per il popolamento
-ma otterrei dei veri vantaggi per poi quando devo manipolare questi dati?
-
-name: Gio, {[commit: adgasd12, filesedited: 5, date: 2025-09-13, file_edited: ['file1', 'file2', 'file3']], [commit: adgasd12, filesedited: 1, date: 2025-09-16, file_edited: ['file4', 'file5']]}
-
-'''
 from entities.author import Author
 
 class CommitStats():

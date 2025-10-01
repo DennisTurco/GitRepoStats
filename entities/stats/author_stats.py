@@ -1,14 +1,14 @@
+from dataclasses import dataclass
 from entities.author import Author
 
+@dataclass
 class AuthorStats():
-
-    def __init__(self, author: Author, commits: int, insertions: int, deletions: int, lines: int, files: int):
-        self.author = author
-        self.commits = commits
-        self.insertions = insertions
-        self.deletions = deletions
-        self.lines = lines
-        self.files = files
+    author: Author
+    commits: int
+    insertions: int
+    deletions: int
+    lines: int
+    files: int
 
     def __str__(self) -> str:
         return f"author: {self.author.main_username}, commits: {self.commits}, insertions: {self.insertions}, deletions: {self.deletions}, lines: {self.lines}, files: {self.files}"

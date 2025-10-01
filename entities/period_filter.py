@@ -1,12 +1,10 @@
+from dataclasses import dataclass
 from datetime import datetime
 
+@dataclass
 class PeriodFilter:
     start_date: datetime
     end_date: datetime
-
-    def __init__(self, start_date: datetime, end_date: datetime) -> None:
-        self.start_date = start_date
-        self.end_date = end_date
 
     def __str__(self) -> str:
         start_str = self.start_date.strftime("%d/%m/%Y") if self.start_date else "N/A"

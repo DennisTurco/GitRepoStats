@@ -1,3 +1,4 @@
+import html
 import webbrowser
 
 from entities.data import Data
@@ -11,7 +12,7 @@ class Dashboard():
         with open(FILE_PATH, "w", encoding="utf-8") as f:
             data_table_files = Dashboard.__list_to_html_table(data.csv_file_stats, "tableFiles")
             data_table_branches = Dashboard.__list_to_html_table(data.csv_branches_stats, "tableBranches")
-            data_table_code_complexity = Dashboard.__list_to_html_table(data.csv_code_complexity, "tableCodeComplexity")
+            data_table_code_complexity = Dashboard.__list_to_html_table(data.csv_code_complexity, "tableCodeComplexity", "|")
             html_page = Dashboard.__build_and_get_html_page(data, data_table_files, data_table_branches, data_table_code_complexity)
             f.write(html_page)
 
@@ -20,22 +21,21 @@ class Dashboard():
         webbrowser.open(FILE_PATH)
 
     @staticmethod
-    def __list_to_html_table(data: list[str], table_id: str) -> str:
-        rows = [row.split(",") for row in data]
+    def __list_to_html_table(data: list[str], table_id: str, delimiter=",") -> str:
+        rows = [row.split(delimiter) for row in data]
         header, *body = rows
         col_count = len(header)
 
         normalized_body = [row + [""] * (col_count - len(row)) for row in body]
 
         table_html = f"<table id='{table_id}' class='display'>\n"
-        table_html += "  <thead><tr>" + "".join(f"<th>{col}</th>" for col in header) + "</tr></thead>\n"
+        table_html += "  <thead><tr>" + "".join(f"<th>{html.escape(str(col))}</th>" for col in header) + "</tr></thead>\n"
         table_html += "  <tbody>\n"
         for row in normalized_body:
-            table_html += "    <tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>\n"
+            table_html += "    <tr>" + "".join(f"<td>{html.escape(str(col))}</td>" for col in row) + "</tr>\n"
         table_html += "  </tbody>\n</table>"
 
         return table_html
-
 
     @staticmethod
     def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str, data_table_code_complexity: str) -> str:

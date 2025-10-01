@@ -3,12 +3,11 @@ from git import Repo
 from dashboard import Dashboard
 from logger import Logger
 from plot import Plot
-import subprocess
-import re
+import lizard
 
 from entities.data import Data
 from entities.author import Author
-from entities.lizard_data import LizardData
+from entities.lizard_data import LizardData, LizardLocation
 from entities.report_config import ReportConfig
 from entities.stats.commit_stats import CommitStats
 from entities.stats.author_stats import AuthorStats
@@ -43,9 +42,7 @@ class RepoManagement:
         file_stats = None
         commits_stats = None
         branches_stats = None
-        if self.report_config.code_complexity:
-            lizard_output = self.__analyze_code_complexity()
-            code_complexity = self.__parse_lizard_output(lizard_output)
+        code_complexity = self.__analyze_code_complexity_with_lizard() if self.report_config.code_complexity else None
         if self.report_config.authors or self.report_config.branches or self.report_config.branches or self.report_config.commits or self.report_config.files:
             authors = self.__get_authors() # to obtain only the unique author without duplications
             author_stats = self.__get_authors_stats_list(authors) if self.report_config.authors else None
@@ -55,52 +52,34 @@ class RepoManagement:
 
         self.__plot_all_stats(author_stats, file_stats, commits_stats, branches_stats, code_complexity)
 
-    def __analyze_code_complexity(self) -> str:
+    def __analyze_code_complexity_with_lizard(self) -> list[LizardData]:
         Logger.write_log(f"Calculating code complexity for {self.repo_path}", log_box=self.log_box)
-        try:
-            result = subprocess.run(
-                ["lizard", self._repo_obj.working_tree_dir],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="ignore"
-            )
+        results = lizard.analyze([self.repo_path])
+        all_functions: list[LizardData] = []
 
-            if result.returncode == 2:
-                Logger.write_log(f"Code complexity analysis failed:\n{result.stderr}", log_box=self.log_box, log_type=Logger.LogType.ERROR)
-                return ""
-            if result.returncode == 1:
-                Logger.write_log(f"Code complexity analysis completed with warnings.", log_box=self.log_box)
+        for file_info in results:
+            for fun in file_info.function_list:
+                if self.__skip_function_from_analysis(fun.name, fun.start_line, fun.end_line, self.__get_extension_from_file(file_info.filename)):
+                    continue
+                data = LizardData(
+                    nloc=fun.nloc,
+                    ccn=fun.cyclomatic_complexity,
+                    token=fun.token_count,
+                    param=fun.parameter_count,
+                    length=fun.length,
+                    location=LizardLocation(
+                        function=fun.name,
+                        lines=f"{fun.start_line}-{fun.end_line}",
+                        file=file_info.filename
+                    )
+                )
+                all_functions.append(data)
 
-            Logger.write_log(f"Code complexity analysis completed for {self.repo_path}", log_box=self.log_box)
-            return result.stdout
+        Logger.write_log(f"Code complexity calculated successfully", log_box=self.log_box)
+        return all_functions
 
-        except Exception as e:
-            Logger.write_log(f"Unexpected error: {e}", log_box=self.log_box, log_type=Logger.LogType.ERROR)
-            return ""
-
-    def __parse_lizard_output(self, lizard_output) -> list[LizardData]:
-        lines = lizard_output.splitlines()
-
-        start = None
-        for i, line in enumerate(lines):
-            if line.startswith("==="):
-                start = i + 2
-                break
-
-        if start is None:
-            return []
-
-        # read data from string
-        data = []
-        for line in lines[start:]:
-            if line.strip() == "" or line.startswith("==="):
-                break
-            parts = re.split(r"\s+", line.strip(), maxsplit=5)
-            if len(parts) == 6:
-                nloc, ccn, token, param, length, location = parts
-                data.append(LizardData(int(nloc), int(ccn), int(token), int(param), int(length), location))
-        return data
+    def __skip_function_from_analysis(self, function_name: str, start_line: int, end_line: int, file_extension: str) -> bool:
+        return (file_extension == "js" and start_line == end_line) or function_name == "" or function_name == "(anonymous)"
 
     def __iter_filtered_commits(self, **kwargs):
         for commit in self._repo_obj.iter_commits(**kwargs):

@@ -1,3 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
 test
-*/logs.log
-/repo_stats.html
+*logs.log
+*repo_stats.html

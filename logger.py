@@ -4,7 +4,7 @@ from enum import Enum
 import sys
 import os
 
-FILE_PATH = "./config/logs.log"
+FILE_PATH = "./logs.log"
 
 class Logger:
     class LogType(Enum):
