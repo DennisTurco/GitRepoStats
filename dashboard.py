@@ -43,13 +43,14 @@ class Dashboard():
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Repo Stats</title>
+    <title>Git Repo Stats</title>
     <meta charset="UTF-8">
 
     <!-- DataTables CSS + JS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <link rel="shortcut icon" type="image/x-icon" href="https://github.com/DennisTurco/GitRepoStats/raw/master/imgs/logo64x64.ico" />
 
     <script>
         $(document).ready(function() {{
@@ -92,7 +93,11 @@ class Dashboard():
     </style>
 </head>
 <body>
-    <h1>Repo Statistics - {data.repo_name}</h1>
+    <h1 style="display: flex; align-items: center; gap: 10px;">
+        <img src="https://raw.githubusercontent.com/DennisTurco/GitRepoStats/master/imgs/logo64x64.ico"
+            alt="Logo" width="64" height="64">
+        Repo Statistics - {data.repo_name}
+    </h1>
     <h3>Period: {data.period}</h3>
     <div class="tab">
         <button class="tablinks" onclick="openTab(event, 'Authors')" id="defaultOpen">Authors</button>
@@ -136,7 +141,7 @@ class Dashboard():
             <li><b>Lines</b>: line range in the source file</li>
             <li><b>File</b>: file path containing the function</li>
         </ul>
-        <h6>You can see Lizard documentation: <a href="https://github.com/terryyin/lizard target='_blank'">here</a></h6>
+        <h6>You can see Lizard documentation: <a href="https://github.com/terryyin/lizard" target="_blank">here</a></h6>
         <p></p>
         Status values:
         <ul>

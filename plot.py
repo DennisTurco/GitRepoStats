@@ -108,7 +108,7 @@ class Plot:
                 hole=0.3
             )]
         )
-        fig.update_layout(title="Top 30 Languages")
+        fig.update_layout(title="Top 20 Languages")
         return fig.to_html(full_html=False, include_plotlyjs=False)
 
     def get_commits_html(self):
