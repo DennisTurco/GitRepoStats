@@ -1,6 +1,4 @@
-# Git Repo Stats
-
-![logo](./imgs/logo64x64.ico)
+![logo](./imgs/banner.png)
 
 ## Description
 
