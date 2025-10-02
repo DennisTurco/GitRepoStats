@@ -25,7 +25,7 @@ With Git Repo Stats, you can:
 
 ### Example Output
 
-View an example report generated from scanning the [📄 Redis stats example .html](./docs/redis_stats_example.html) (you can view the github project of redis from [here](https://github.com/redis/redis))
+View an example report generated [📄 Redis stats example .html](./docs/redis_stats_example.html) from scanning redis repo (you can view the github project of redis from [here](https://github.com/redis/redis))
 
 ## Usage
 

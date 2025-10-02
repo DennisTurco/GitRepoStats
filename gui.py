@@ -67,7 +67,8 @@ class GUI(ctk.CTk):
             "commits": tk.BooleanVar(value=True),
             "branches": tk.BooleanVar(value=True),
             "files": tk.BooleanVar(value=True),
-            "code": tk.BooleanVar(value=True)
+            "code": tk.BooleanVar(value=True),
+            "busfactor": tk.BooleanVar(value=True)
         }
 
         checkbox_frame = ctk.CTkFrame(self.filters_frame)
@@ -78,12 +79,14 @@ class GUI(ctk.CTk):
         self.check_branches = ctk.CTkCheckBox(checkbox_frame, text="Branches stats", variable=self.stats_vars["branches"], command=self.ensure_one_checked)
         self.check_files = ctk.CTkCheckBox(checkbox_frame, text="File stats", variable=self.stats_vars["files"], command=self.ensure_one_checked)
         self.check_code_analysis = ctk.CTkCheckBox(checkbox_frame, text="Code Analysis", variable=self.stats_vars["code"], command=self.ensure_one_checked)
+        self.check_bus_factor = ctk.CTkCheckBox(checkbox_frame, text="Code Ownership", variable=self.stats_vars["busfactor"], command=self.ensure_one_checked)
 
         self.check_author.pack(side="left", padx=5)
         self.check_commits.pack(side="left", padx=5)
         self.check_branches.pack(side="left", padx=5)
         self.check_files.pack(side="left", padx=5)
         self.check_code_analysis.pack(side="left", padx=5)
+        self.check_bus_factor.pack(side="left", padx=5)
 
         self.log_box = ctk.CTkTextbox(self)
         self.log_box.grid(row=1, column=0, columnspan=2, padx=10, pady=(10, 0), sticky="nsew")
@@ -130,7 +133,7 @@ class GUI(ctk.CTk):
         try:
             self.get_button.configure(state="disabled")
             period = PeriodFilter(start_date, end_date)
-            report_config = ReportConfig(self.stats_vars["author"].get(), self.stats_vars["commits"].get(), self.stats_vars["branches"].get(), self.stats_vars["files"].get(), self.stats_vars["code"].get())
+            report_config = ReportConfig(self.stats_vars["author"].get(), self.stats_vars["commits"].get(), self.stats_vars["branches"].get(), self.stats_vars["files"].get(), self.stats_vars["code"].get(), self.stats_vars["busfactor"].get())
 
             repo = RepoManagement(repo_path, self, period, report_config)
             repo.obtain_all_info_from_repo()

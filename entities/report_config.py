@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 
 @dataclass
@@ -8,3 +7,4 @@ class ReportConfig():
     branches: bool
     files: bool
     code_complexity: bool
+    bus_factor: bool

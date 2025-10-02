@@ -1,5 +1,8 @@
+from typing import Optional
+
+
 class Author:
-    def __init__(self, main_email: str, main_username: str, usernames: list[str] = None, emails: list[str] = None) -> None:
+    def __init__(self, main_email: str, main_username: str, usernames: Optional[list[str]] = None, emails: Optional[list[str]] = None) -> None:
         self.main_email = main_email
         self.main_username = main_username
         self.usernames = usernames if usernames is not None else []
@@ -24,3 +27,10 @@ class Author:
     def add_email_if_not_saved(self, main_email: str) -> None:
         if main_email not in self.emails:
             self.emails.append(main_email)
+
+    @staticmethod
+    def get_author_by_username(authors: list["Author"], username: str):
+        for author in authors:
+            if author.main_username == username or username in author.usernames:
+                return author
+        return None

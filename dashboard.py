@@ -13,7 +13,8 @@ class Dashboard():
             data_table_files = Dashboard.__list_to_html_table(data.csv_file_stats, "tableFiles")
             data_table_branches = Dashboard.__list_to_html_table(data.csv_branches_stats, "tableBranches")
             data_table_code_complexity = Dashboard.__list_to_html_table(data.csv_code_complexity, "tableCodeComplexity", "|")
-            html_page = Dashboard.__build_and_get_html_page(data, data_table_files, data_table_branches, data_table_code_complexity)
+            data_table_bus_factor = Dashboard.__list_to_html_table(data.csv_bus_factor, "tableBusFactor")
+            html_page = Dashboard.__build_and_get_html_page(data, data_table_files, data_table_branches, data_table_code_complexity, data_table_bus_factor)
             f.write(html_page)
 
     @staticmethod
@@ -38,7 +39,7 @@ class Dashboard():
         return table_html
 
     @staticmethod
-    def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str, data_table_code_complexity: str) -> str:
+    def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str, data_table_code_complexity: str, data_table_bus_factor: str) -> str:
         html_page = f"""
 <!DOCTYPE html>
 <html>
@@ -68,6 +69,11 @@ class Dashboard():
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
                 "order": []
+            }})
+            $('#tableBusFactor').DataTable({{
+                "pageLength": 20,
+                "lengthMenu": [5, 10, 20, 50, 100],
+                "order": []
             }});
         }});
     </script>
@@ -90,6 +96,34 @@ class Dashboard():
         .tab button:hover {{ background-color: #ddd; }}
         .tab button.active {{ background-color: #ccc; }}
         .tabcontent {{ display: none; padding: 20px 0; }}
+        .chart-info summary {{
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95em;
+            color: #444;
+            list-style: none;
+            margin: 10px;
+            margin-bottom: 20px;
+            margin-left: 20px;
+        }}
+        .chart-info summary::marker {{
+            content: "▶ ";
+            color: #666;
+        }}
+        .chart-info[open] summary::marker {{
+            content: "▼ ";
+        }}
+        .chart-info aside {{
+            background: #f9f9f9;
+            border-left: 3px solid #007acc;
+            padding: 15px 20px;
+            margin-top: 8px;
+            margin-left: 20px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            line-height: 1.5;
+            border-radius: 6px;
+        }}
     </style>
 </head>
 <body>
@@ -130,27 +164,67 @@ class Dashboard():
 
     <div id="CodeAnalysis" class="tabcontent">
         <h2> Code Complexity </h2>
-        Data description:
-        <ul>
-            <li><b>NLOC</b>: effective lines of code (excluding comments/blank)</li>
-            <li><b>CCN</b>: cyclomatic Complexity Number.(complex if > 10)</li>
-            <li><b>Token</b>: number of tokens in the function</li>
-            <li><b>Param</b>: number of function parameters</li>
-            <li><b>Length</b>: total function length in lines (similar to nloc but including also declarations, exc...)</li>
-            <li><b>Function</b>: function or method name</li>
-            <li><b>Lines</b>: line range in the source file</li>
-            <li><b>File</b>: file path containing the function</li>
-        </ul>
-        <h6>You can see Lizard documentation: <a href="https://github.com/terryyin/lizard" target="_blank">here</a></h6>
-        <p></p>
-        Status values:
-        <ul>
-            <li>✅: if all checks are passed (nloc <= 30 and ccn <= 10 and token <= 100 and param <= 4)</li>
-            <li>⚠️: if something needs attentions (nloc <= 100 and ccn <= 20 and token <= 500 and param <= 7)</li>
-            <li>❌: if something is at risk</li>
-        </ul>
-        you can filter by inserting the emoji in the table search bar.
+        <details class="chart-info">
+            <summary>ℹ️ Data description</summary>
+            <aside>
+                <p>
+                    <ul>
+                        <li><b>NLOC</b>: effective lines of code (excluding comments/blank)</li>
+                        <li><b>CCN</b>: cyclomatic Complexity Number.(complex if > 10)</li>
+                        <li><b>Token</b>: number of tokens in the function</li>
+                        <li><b>Param</b>: number of function parameters</li>
+                        <li><b>Length</b>: total function length in lines (similar to nloc but including also declarations, exc...)</li>
+                        <li><b>Function</b>: function or method name</li>
+                        <li><b>Lines</b>: line range in the source file</li>
+                        <li><b>File</b>: file path containing the function</li>
+                    </ul>
+                </p>
+                <p>
+                    <h6>You can see Lizard documentation: <a href="https://github.com/terryyin/lizard" target="_blank">here</a></h6>
+                </p>
+                <p>
+                    Status values:
+                    <ul>
+                        <li>✅: if all checks are passed (nloc <= 30 and ccn <= 10 and token <= 100 and param <= 4)</li>
+                        <li>⚠️: if something needs attentions (nloc <= 100 and ccn <= 20 and token <= 500 and param <= 7)</li>
+                        <li>❌: if something is at risk</li>
+                    </ul>
+                    you can filter by inserting the emoji in the table search bar.
+                </p>
+            </aside>
+        </details>
         {data_table_code_complexity}
+
+        <h2>Code ownership by file</h2>
+
+        <details class="chart-info">
+            <summary>ℹ️ About this report</summary>
+            <aside>
+                <p>
+                    This chart shows how <strong>code ownership</strong> is distributed among authors for each file in the repository.
+                </p>
+
+                <h4>How to read it</h4>
+                <ul>
+                    <li><strong>Lines</strong>: the number of lines currently attributed to an author in the file.</li>
+                    <li><strong>Percentage</strong>: the proportion of ownership relative to the total file size.</li>
+                </ul>
+
+                <h4>Why this matters</h4>
+                <p>
+                    Understanding code ownership helps assess the <em>bus factor</em> — the risk that knowledge about a
+                    file or component is concentrated in too few people.
+                </p>
+                <p>
+                    Ideally, ownership should be shared among multiple authors.
+                    If a single author controls more than ~20-30% of a file, it could indicate a potential knowledge concentration risk,
+                    depending on project size and complexity, making the project more vulnerable if that person leaves the team.
+                </p>
+            </aside>
+        </details>
+
+        {data_table_bus_factor}
+
 
     </div>
 
