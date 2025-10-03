@@ -23,12 +23,26 @@ class Dashboard():
 
     @staticmethod
     def __list_to_html_table(data: list[str], table_id: str, delimiter=",") -> str:
+        # parsing CSV in righe/colonne
         rows = [row.split(delimiter) for row in data]
+        if not rows:
+            return "<p>No data available</p>"
+
         header, *body = rows
         col_count = len(header)
-
         normalized_body = [row + [""] * (col_count - len(row)) for row in body]
 
+        # --- Caso speciale per BusFactor: tabella normale, senza righe extra ---
+        if table_id == "tableBusFactor":
+            table_html = f"<table id='{table_id}' class='display'>\n"
+            table_html += "  <thead><tr>" + "".join(f"<th>{html.escape(str(col))}</th>" for col in header) + "</tr></thead>\n"
+            table_html += "  <tbody>\n"
+            for row in normalized_body:
+                table_html += "    <tr>" + "".join(f"<td>{html.escape(str(col))}</td>" for col in row) + "</tr>\n"
+            table_html += "  </tbody>\n</table>"
+            return table_html
+
+        # --- default table ---
         table_html = f"<table id='{table_id}' class='display'>\n"
         table_html += "  <thead><tr>" + "".join(f"<th>{html.escape(str(col))}</th>" for col in header) + "</tr></thead>\n"
         table_html += "  <tbody>\n"
@@ -37,6 +51,8 @@ class Dashboard():
         table_html += "  </tbody>\n</table>"
 
         return table_html
+
+
 
     @staticmethod
     def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str, data_table_code_complexity: str, data_table_bus_factor: str) -> str:
@@ -51,6 +67,8 @@ class Dashboard():
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/rowgroup/1.3.1/css/rowGroup.dataTables.min.css">
+    <script src="https://cdn.datatables.net/rowgroup/1.3.1/js/dataTables.rowGroup.min.js"></script>
     <link rel="shortcut icon" type="image/x-icon" href="https://github.com/DennisTurco/GitRepoStats/raw/master/imgs/logo64x64.ico" />
 
     <script>
@@ -73,7 +91,10 @@ class Dashboard():
             $('#tableBusFactor').DataTable({{
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
-                "order": []
+                "order": [],
+                "rowGroup": {{
+                    dataSrc: 0
+                }}
             }});
         }});
     </script>

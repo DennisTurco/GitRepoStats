@@ -16,6 +16,9 @@ class AuthorStats():
     def to_csv(self) -> str:
         return f"{self.author.main_username},{self.commits},{self.insertions},{self.deletions},{self.lines},{self.files}"
 
+    def has_stats(self) -> bool:
+        return self.commits != 0 or self.insertions != 0 or self.deletions != 0 or self.lines != 0 or self.files != 0
+
     @staticmethod
     def csv_header() -> str:
         return "Author,Commits,Insertions,Deletions,Lines,Files"

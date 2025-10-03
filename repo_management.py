@@ -108,7 +108,11 @@ class RepoManagement:
     def __map_blame_file_into_bus_factor(self, bus_factor: BusFactorData, authors: list[Author]) -> None:
         from collections import defaultdict
         authors_count = defaultdict(int)
-        owners: list[FileOwner] = []
+
+        # if there are not many authors we shows also the authors with 0% as total
+        if len(authors) <= 5:
+            for author in authors:
+                authors_count[author.main_username] = 0
 
         rel_path = os.path.relpath(bus_factor.filepath, self._repo_obj.working_tree_dir).replace("\\", "/")
 
@@ -223,7 +227,14 @@ class RepoManagement:
             a_stats.files += stats.get('files', 0)
 
         Logger.write_log(f"Author stats list obtained ({len(author_stats_map)})", log_box=self.log_box)
-        return list(author_stats_map.values())
+
+        # removing all users with no data from list
+        authors_ok: list[AuthorStats] = []
+        for author in list(author_stats_map.values()):
+            if author.has_stats():
+                authors_ok.append(author)
+
+        return authors_ok
 
     def __get_files_stats_list(self, authors: list[Author]) -> list[FileStats]:
         Logger.write_log("Getting files stats list...", log_box=self.log_box)
