@@ -1,6 +1,5 @@
 from typing import Optional
 
-
 class Author:
     def __init__(self, main_email: str, main_username: str, usernames: Optional[list[str]] = None, emails: Optional[list[str]] = None) -> None:
         self.main_email = main_email

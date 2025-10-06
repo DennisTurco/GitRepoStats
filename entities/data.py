@@ -15,4 +15,5 @@ class Data():
     csv_file_stats: list[str]
     csv_branches_stats: list[str]
     csv_code_complexity: list[str]
+    csv_code_duplication: list[str]
     csv_bus_factor: list[str]

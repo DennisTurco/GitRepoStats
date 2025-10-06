@@ -7,4 +7,5 @@ class ReportConfig():
     branches: bool
     files: bool
     code_complexity: bool
+    code_duplication: bool
     bus_factor: bool

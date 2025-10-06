@@ -2,6 +2,7 @@ import os
 from git import Repo
 from dashboard import Dashboard
 from entities.bus_factor_data import BusFactorData, FileOwner
+from entities.duplication_data import DuplicationData
 from logger import Logger
 from plot import Plot
 import lizard
@@ -20,7 +21,10 @@ class RepoManagement:
 
     def __init__(self, repo_path: str, log_box, period: PeriodFilter, report_config: ReportConfig):
         self.repo_path = repo_path
-        self._repo_obj = Repo(repo_path)
+        try:
+            self._repo_obj = Repo(repo_path)
+        except:
+            raise Exception("The project path provided is not a GitHub repository")
         self.log_box = log_box
         self.period = period
         self.report_config = report_config
@@ -38,23 +42,23 @@ class RepoManagement:
 
     def obtain_all_info_from_repo(self) -> None:
         code_complexity = None
-        authors = None
         author_stats = None
         file_stats = None
         commits_stats = None
         branches_stats = None
         authors = self.__get_authors() # to obtain only the unique author without duplications
-        code_complexity = self.__analyze_code_complexity_with_lizard() if self.report_config.code_complexity else None
-        bus_factor = self.__get_bus_factor_data(authors) if self.report_config.code_complexity else None
+        code_complexity = self.__analyze_code_complexity_with_lizard() if self.report_config.code_complexity else []
+        code_duplication = self.__find_possible_duplicates(code_complexity) if self.report_config.code_duplication else []
+        bus_factor = self.__get_bus_factor_data(authors) if self.report_config.bus_factor else None
         author_stats = self.__get_authors_stats_list(authors) if self.report_config.authors else None
         file_stats = self.__get_files_stats_list(authors) if self.report_config.files else None
         commits_stats = self.__get_commits_stats_list(authors) if self.report_config.commits else None
         branches_stats = self.__get_branches_stats_list(authors) if self.report_config.branches else None
 
-        self.__plot_all_stats(author_stats, file_stats, commits_stats, branches_stats, code_complexity, bus_factor)
+        self.__plot_all_stats(author_stats, file_stats, commits_stats, branches_stats, code_complexity, code_duplication, bus_factor)
 
     def __analyze_code_complexity_with_lizard(self) -> list[LizardData]:
-        Logger.write_log(f"Calculating code complexity for {self.repo_path}", log_box=self.log_box)
+        Logger.write_log(f"Calculating code complexity for {self.repo_path}...", log_box=self.log_box)
         results = lizard.analyze([self.repo_path])
         all_functions: list[LizardData] = []
 
@@ -68,6 +72,7 @@ class RepoManagement:
                     token=fun.token_count,
                     param=fun.parameter_count,
                     length=fun.length,
+                    code=self.__get_function_code(file_info.filename, fun.start_line, fun.end_line),
                     location=LizardLocation(
                         function=fun.name,
                         lines=f"{fun.start_line}-{fun.end_line}",
@@ -76,11 +81,31 @@ class RepoManagement:
                 )
                 all_functions.append(data)
 
-        Logger.write_log(f"Code complexity calculated successfully", log_box=self.log_box)
+        Logger.write_log(f"Code complexity calculated successfully: {len(all_functions)} functions", log_box=self.log_box)
         return all_functions
 
+    def __get_function_code(self, filename: str, start_line: int, end_line: int) -> str:
+        try:
+            with open(filename, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+                return "".join(lines[start_line - 1:end_line]).strip()
+        except Exception as e:
+            Logger.write_log(f"An error occurred while reading file {filename}: {e}", log_box=self.log_box, log_type=Logger.LogType.WARN)
+            return ""
+
+    def __find_possible_duplicates(self, stats: list[LizardData], threshold: float = 5.0) -> list[DuplicationData]:
+        Logger.write_log(f"Analyzing code duplication...", log_box=self.log_box)
+        duplicates: list[DuplicationData] = []
+        for i in range(len(stats)):
+            for j in range(i + 1, len(stats)):
+                score = stats[i].similarity_score(stats[j])
+                if score <= threshold:
+                    duplicates.append(DuplicationData(stats[i], stats[j], score))
+        Logger.write_log(f"Found {len(duplicates)} duplications", log_box=self.log_box)
+        return duplicates
+
     def __skip_function_from_analysis(self, function_name: str, start_line: int, end_line: int, file_extension: str) -> bool:
-        return (file_extension == "js" and start_line == end_line) or function_name == "" or function_name == "(anonymous)"
+        return file_extension == "js" or function_name == "" or function_name == "(anonymous)" or start_line == end_line
 
     def __get_bus_factor_data(self, authors: list[Author]) -> list[BusFactorData]:
         Logger.write_log("Calculating code ownership by file stats...", log_box=self.log_box)
@@ -318,7 +343,7 @@ class RepoManagement:
         return Author(email, "Unknown")
 
 
-    def __plot_all_stats(self, all_stats: list[AuthorStats], file_stats: list[FileStats], commits_stats: list[CommitStats], branches_stats: list[BranchStats], code_complexity: list[LizardData], bus_factor: list[BusFactorData]) -> None:
+    def __plot_all_stats(self, all_stats: list[AuthorStats], file_stats: list[FileStats], commits_stats: list[CommitStats], branches_stats: list[BranchStats], code_complexity: list[LizardData], code_duplication: list[DuplicationData], bus_factor: list[BusFactorData]) -> None:
         Logger.write_log("Preparing data for plotting", log_box=self.log_box)
 
         plot = Plot()
@@ -337,9 +362,10 @@ class RepoManagement:
         csv_files = FileStats.to_csv_data_list(file_stats) if self.report_config.files and file_stats else ["No data available"]
         csv_branches = BranchStats.to_csv_data_list(branches_stats) if self.report_config.branches and branches_stats else ["No data available"]
         csv_code_complexity = LizardData.to_csv_data_list(code_complexity) if self.report_config.code_complexity and code_complexity else ["No data available"]
+        csv_code_duplication = DuplicationData.to_csv_data_list(code_duplication) if self.report_config.code_duplication and code_duplication else ["No data available"]
         csv_bus_factor = BusFactorData.to_csv_data_list(bus_factor) if self.report_config.bus_factor and bus_factor else ["No data available"]
 
-        data_to_plot = Data(self.repo_name, self.period, authors_html, files_html, languages_html, commits_html, cumulative_commits_html, branches_html, cumulative_branches_html, csv_files, csv_branches, csv_code_complexity, csv_bus_factor)
+        data_to_plot = Data(self.repo_name, self.period, authors_html, files_html, languages_html, commits_html, cumulative_commits_html, branches_html, cumulative_branches_html, csv_files, csv_branches, csv_code_complexity, csv_code_duplication, csv_bus_factor)
 
         Logger.write_log("Generating dashboard file .html", log_box=self.log_box)
         Dashboard.generate_html_page(data_to_plot)

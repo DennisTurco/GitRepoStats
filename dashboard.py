@@ -13,8 +13,9 @@ class Dashboard():
             data_table_files = Dashboard.__list_to_html_table(data.csv_file_stats, "tableFiles")
             data_table_branches = Dashboard.__list_to_html_table(data.csv_branches_stats, "tableBranches")
             data_table_code_complexity = Dashboard.__list_to_html_table(data.csv_code_complexity, "tableCodeComplexity", "|")
+            data_table_code_duplication = Dashboard.__list_to_html_table(data.csv_code_duplication, "tableCodeDuplication", "|")
             data_table_bus_factor = Dashboard.__list_to_html_table(data.csv_bus_factor, "tableBusFactor")
-            html_page = Dashboard.__build_and_get_html_page(data, data_table_files, data_table_branches, data_table_code_complexity, data_table_bus_factor)
+            html_page = Dashboard.__build_and_get_html_page(data, data_table_files, data_table_branches, data_table_code_complexity, data_table_code_duplication, data_table_bus_factor)
             f.write(html_page)
 
     @staticmethod
@@ -23,7 +24,7 @@ class Dashboard():
 
     @staticmethod
     def __list_to_html_table(data: list[str], table_id: str, delimiter=",") -> str:
-        # parsing CSV in righe/colonne
+        # parsing CSV
         rows = [row.split(delimiter) for row in data]
         if not rows:
             return "<p>No data available</p>"
@@ -32,13 +33,13 @@ class Dashboard():
         col_count = len(header)
         normalized_body = [row + [""] * (col_count - len(row)) for row in body]
 
-        # --- Caso speciale per BusFactor: tabella normale, senza righe extra ---
+        # --- special case
         if table_id == "tableBusFactor":
             table_html = f"<table id='{table_id}' class='display'>\n"
             table_html += "  <thead><tr>" + "".join(f"<th>{html.escape(str(col))}</th>" for col in header) + "</tr></thead>\n"
             table_html += "  <tbody>\n"
             for row in normalized_body:
-                table_html += "    <tr>" + "".join(f"<td>{html.escape(str(col))}</td>" for col in row) + "</tr>\n"
+                table_html += "    <tr>" + "".join(f"<td>{str(Dashboard.__truncate_with_tooltip(col))}</td>" for col in row) + "</tr>\n"
             table_html += "  </tbody>\n</table>"
             return table_html
 
@@ -47,15 +48,25 @@ class Dashboard():
         table_html += "  <thead><tr>" + "".join(f"<th>{html.escape(str(col))}</th>" for col in header) + "</tr></thead>\n"
         table_html += "  <tbody>\n"
         for row in normalized_body:
-            table_html += "    <tr>" + "".join(f"<td>{html.escape(str(col))}</td>" for col in row) + "</tr>\n"
+            table_html += "    <tr>" + "".join(f"<td>{str(Dashboard.__truncate_with_tooltip(col))}</td>" for col in row) + "</tr>\n"
         table_html += "  </tbody>\n</table>"
 
         return table_html
 
+    @staticmethod
+    def __truncate_with_tooltip(text: str, max_length: int = 50) -> str:
+        """
+        Truncate the text if it's too long, adding a tooltip with the full text.
+        """
+        text = html.escape(str(text))
+        if len(text) <= max_length:
+            return text
+        truncated = "..." + text[len(text)-max_length:len(text)]
+        return truncated
 
 
     @staticmethod
-    def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str, data_table_code_complexity: str, data_table_bus_factor: str) -> str:
+    def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str, data_table_code_complexity: str, data_table_code_duplication: str, data_table_bus_factor: str) -> str:
         html_page = f"""
 <!DOCTYPE html>
 <html>
@@ -82,12 +93,17 @@ class Dashboard():
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
                 "order": []
-            }})
+            }});
             $('#tableCodeComplexity').DataTable({{
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
                 "order": []
-            }})
+            }});
+            $('#tableCodeDuplication').DataTable({{
+                "pageLength": 20,
+                "lengthMenu": [5, 10, 20, 50, 100],
+                "order": []
+            }});
             $('#tableBusFactor').DataTable({{
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
@@ -215,6 +231,41 @@ class Dashboard():
             </aside>
         </details>
         {data_table_code_complexity}
+
+        <h2> Code Duplication Detection </h2>
+
+        <details class="chart-info">
+            <summary>ℹ️ Data description</summary>
+            <aside>
+                <p>
+                    This section shows detected duplicated code blocks in the repository, helping identify redundancy and maintainability issues.
+                </p>
+
+                <h4>How to read it</h4>
+                <ul>
+                    <li><strong>Similarity Score</strong>: a numeric score measuring how similar two code blocks are.
+                        Lower values mean higher similarity (0 = identical code).
+                        This score is calculated from both structural metrics (lines of code, cyclomatic complexity, parameters, tokens, etc.)
+                        and text similarity between code blocks.
+                    </li>
+                    <li><strong>File A / File B</strong>: file paths containing the duplicated code.</li>
+                    <li><strong>Function</strong>: the function or method where duplication was found.</li>
+                    <li><strong>Lines</strong>: line ranges of duplicated sections.</li>
+                </ul>
+
+                <h4>Why this matters</h4>
+                <p>
+                    Code duplication increases maintenance cost and can lead to inconsistencies. Detecting duplication allows refactoring,
+                    improves readability, and reduces bugs by centralizing logic.
+                </p>
+                <p>
+                    Consider addressing duplication especially when similarity scores are high and occur in critical parts of the system.
+                </p>
+            </aside>
+        </details>
+
+        {data_table_code_duplication}
+
 
         <h2>Code ownership by file</h2>
 

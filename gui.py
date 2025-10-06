@@ -9,7 +9,7 @@ from logger import Logger
 from repo_management import RepoManagement
 
 class GUI(ctk.CTk):
-    app_width, app_height = 850, 500
+    app_width, app_height = 950, 500
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -22,7 +22,7 @@ class GUI(ctk.CTk):
         ctk.set_default_color_theme("green")
         self.title("Git Repo Stats")
         self.centerWindow()
-        self.minsize(600, 400)
+        self.minsize(850, 400)
 
     def centerWindow(self) -> None:
         screen_width = self.winfo_screenwidth()
@@ -67,7 +67,8 @@ class GUI(ctk.CTk):
             "commits": tk.BooleanVar(value=True),
             "branches": tk.BooleanVar(value=True),
             "files": tk.BooleanVar(value=True),
-            "code": tk.BooleanVar(value=True),
+            "codecomplexity": tk.BooleanVar(value=True),
+            "codeduplication": tk.BooleanVar(value=True),
             "busfactor": tk.BooleanVar(value=True)
         }
 
@@ -78,14 +79,16 @@ class GUI(ctk.CTk):
         self.check_commits = ctk.CTkCheckBox(checkbox_frame, text="Commits stats", variable=self.stats_vars["commits"], command=self.ensure_one_checked)
         self.check_branches = ctk.CTkCheckBox(checkbox_frame, text="Branches stats", variable=self.stats_vars["branches"], command=self.ensure_one_checked)
         self.check_files = ctk.CTkCheckBox(checkbox_frame, text="File stats", variable=self.stats_vars["files"], command=self.ensure_one_checked)
-        self.check_code_analysis = ctk.CTkCheckBox(checkbox_frame, text="Code Analysis", variable=self.stats_vars["code"], command=self.ensure_one_checked)
+        self.check_code_complexity = ctk.CTkCheckBox(checkbox_frame, text="Code Complexity", variable=self.stats_vars["codecomplexity"], command=self.ensure_one_checked)
+        self.check_code_duplication = ctk.CTkCheckBox(checkbox_frame, text="Code Duplication", variable=self.stats_vars["codecomplexity"], command=self.ensure_one_checked)
         self.check_bus_factor = ctk.CTkCheckBox(checkbox_frame, text="Code Ownership", variable=self.stats_vars["busfactor"], command=self.ensure_one_checked)
 
         self.check_author.pack(side="left", padx=5)
         self.check_commits.pack(side="left", padx=5)
         self.check_branches.pack(side="left", padx=5)
         self.check_files.pack(side="left", padx=5)
-        self.check_code_analysis.pack(side="left", padx=5)
+        self.check_code_complexity.pack(side="left", padx=5)
+        self.check_code_duplication.pack(side="left", padx=5)
         self.check_bus_factor.pack(side="left", padx=5)
 
         self.log_box = ctk.CTkTextbox(self)
@@ -103,6 +106,11 @@ class GUI(ctk.CTk):
     def ensure_one_checked(self):
         if not any(var.get() for var in self.stats_vars.values()):
             self.stats_vars["author"].set(True)
+        if not self.stats_vars["codecomplexity"].get():
+            self.stats_vars["codeduplication"].set(False)
+            self.ensure_one_checked()
+        if self.stats_vars["codeduplication"].get():
+            self.stats_vars["codecomplexity"].set(True)
 
     def get_dates(self):
         start_date_str = self.entry_start_date.get().strip()
@@ -133,7 +141,7 @@ class GUI(ctk.CTk):
         try:
             self.get_button.configure(state="disabled")
             period = PeriodFilter(start_date, end_date)
-            report_config = ReportConfig(self.stats_vars["author"].get(), self.stats_vars["commits"].get(), self.stats_vars["branches"].get(), self.stats_vars["files"].get(), self.stats_vars["code"].get(), self.stats_vars["busfactor"].get())
+            report_config = ReportConfig(self.stats_vars["author"].get(), self.stats_vars["commits"].get(), self.stats_vars["branches"].get(), self.stats_vars["files"].get(), self.stats_vars["codecomplexity"].get(), self.stats_vars["codeduplication"].get(), self.stats_vars["busfactor"].get())
 
             repo = RepoManagement(repo_path, self, period, report_config)
             repo.obtain_all_info_from_repo()
