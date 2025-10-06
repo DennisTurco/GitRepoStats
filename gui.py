@@ -10,6 +10,8 @@ from repo_management import RepoManagement
 
 class GUI(ctk.CTk):
     app_width, app_height = 950, 500
+    last_code_complexity: bool = True
+    last_code_duplication: bool = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -80,7 +82,7 @@ class GUI(ctk.CTk):
         self.check_branches = ctk.CTkCheckBox(checkbox_frame, text="Branches stats", variable=self.stats_vars["branches"], command=self.ensure_one_checked)
         self.check_files = ctk.CTkCheckBox(checkbox_frame, text="File stats", variable=self.stats_vars["files"], command=self.ensure_one_checked)
         self.check_code_complexity = ctk.CTkCheckBox(checkbox_frame, text="Code Complexity", variable=self.stats_vars["codecomplexity"], command=self.ensure_one_checked)
-        self.check_code_duplication = ctk.CTkCheckBox(checkbox_frame, text="Code Duplication", variable=self.stats_vars["codecomplexity"], command=self.ensure_one_checked)
+        self.check_code_duplication = ctk.CTkCheckBox(checkbox_frame, text="Code Duplication", variable=self.stats_vars["codeduplication"], command=self.ensure_one_checked)
         self.check_bus_factor = ctk.CTkCheckBox(checkbox_frame, text="Code Ownership", variable=self.stats_vars["busfactor"], command=self.ensure_one_checked)
 
         self.check_author.pack(side="left", padx=5)
@@ -104,13 +106,19 @@ class GUI(ctk.CTk):
         self.get_button.grid(row=2, column=0, columnspan=2, pady=15, sticky="s")
 
     def ensure_one_checked(self):
+        self.__check_at_least_one_if_necessary()
+        if self.stats_vars["codecomplexity"].get() != self.last_code_complexity and self.last_code_duplication:
+            self.stats_vars["codeduplication"].set(False)
+            self.__check_at_least_one_if_necessary()
+        elif self.stats_vars["codeduplication"].get() != self.last_code_duplication and not self.last_code_complexity:
+            self.stats_vars["codecomplexity"].set(True)
+
+        self.last_code_complexity = self.stats_vars["codecomplexity"].get()
+        self.last_code_duplication = self.stats_vars["codeduplication"].get()
+
+    def __check_at_least_one_if_necessary(self):
         if not any(var.get() for var in self.stats_vars.values()):
             self.stats_vars["author"].set(True)
-        if not self.stats_vars["codecomplexity"].get():
-            self.stats_vars["codeduplication"].set(False)
-            self.ensure_one_checked()
-        if self.stats_vars["codeduplication"].get():
-            self.stats_vars["codecomplexity"].set(True)
 
     def get_dates(self):
         start_date_str = self.entry_start_date.get().strip()

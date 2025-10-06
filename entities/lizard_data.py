@@ -1,6 +1,9 @@
 import difflib
 from enum import Enum
 from dataclasses import dataclass, field
+from numbers import Integral
+from git import Optional
+from simhash import Simhash
 
 @dataclass
 class LizardLocation():
@@ -30,6 +33,7 @@ class LizardData():
     code: str
     location: LizardLocation # location function
     status: Status = field(init=False)
+    hash_value: Optional[int] = field(init=False, repr=False)
 
     def __post_init__(self):
         if self.nloc <= 30 and self.ccn <= 10 and self.token <= 100 and self.param <= 4:
@@ -38,6 +42,9 @@ class LizardData():
             self.status = Status.NEEDS_ATTENTION
         else:
             self.status = Status.AT_RISK
+
+        self.hash_value = int(Simhash(self.code.split()).value)
+
 
     # to obtain a propotional score based on data importance
     def similarity_score(self, other: "LizardData") -> float:
@@ -59,7 +66,6 @@ class LizardData():
         text_similarity = difflib.SequenceMatcher(None, self.code, other.code).ratio()
         text_score = (1 - text_similarity) * 100  # 0 = same, 100 = completly diference
 
-        # Combina metriche numeriche e testo
         score = 0.6 * numeric_score + 0.4 * text_score
         return score
 

@@ -94,15 +94,31 @@ class RepoManagement:
             return ""
 
     def __find_possible_duplicates(self, stats: list[LizardData], threshold: float = 5.0) -> list[DuplicationData]:
-        Logger.write_log(f"Analyzing code duplication...", log_box=self.log_box)
+        Logger.write_log("Analyzing code duplication (prehashed)...", log_box=self.log_box)
         duplicates: list[DuplicationData] = []
-        for i in range(len(stats)):
-            for j in range(i + 1, len(stats)):
-                score = stats[i].similarity_score(stats[j])
+
+        stats.sort(key=lambda s: s.hash_value)
+
+        window_size = 5  # checks only neighbours
+        for i, ld1 in enumerate(stats):
+            for j in range(i + 1, min(i + window_size, len(stats))):
+                ld2 = stats[j]
+                
+                # check fast hamming difference
+                hamming_dist = bin(ld1.hash_value ^ ld2.hash_value).count("1")
+                if hamming_dist > 10:
+                    continue
+
+                if abs(ld1.nloc - ld2.nloc) >= 100:
+                    continue
+
+                score = ld1.similarity_score(ld2)
                 if score <= threshold:
-                    duplicates.append(DuplicationData(stats[i], stats[j], score))
+                    duplicates.append(DuplicationData(ld1, ld2, score))
+
         Logger.write_log(f"Found {len(duplicates)} duplications", log_box=self.log_box)
         return duplicates
+
 
     def __skip_function_from_analysis(self, function_name: str, start_line: int, end_line: int, file_extension: str) -> bool:
         return file_extension == "js" or function_name == "" or function_name == "(anonymous)" or start_line == end_line
