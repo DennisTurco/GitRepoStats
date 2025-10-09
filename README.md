@@ -17,6 +17,10 @@ With Git Repo Stats, you can:
   - Monitor the most active authors in each module to assign code reviews more effectively.
 - **Code Complexity Analysis**
   - Detect functions that are well-written or may need improvement.
+- **Code Ownership Analysis**
+  - Determine who owns the highest percentage of each file.
+- **Code Duplication Analysis**
+  - Identify duplicated or similar functions that could be refactored.
 
 | ![image1](./docs/imgs/screenshot1.png) | ![image2](./docs/imgs/screenshot2.png) |
 | ------------------------ | ------------------------ |
