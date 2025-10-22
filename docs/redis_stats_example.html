@@ -47,7 +47,52 @@
     </script>
 
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding-top: 60px;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1e1e1e;
+            color: white;
+            padding: 10px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: auto; 
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 15px;
+            font-size: 16px;
+            transition: color 0.2s ease;
+        }
+        .navbar a:hover {
+            color: #00aaff;
+        }
+        .navbar .nav-title {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .donate-btn {
+            background-color: #ff4b5c;
+            color: white !important;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+            margin-left: 15px;
+        }
+        .donate-btn:hover {
+            background-color: #e63a4d;
+        }
         .tab {
             overflow: hidden;
             border-bottom: 1px solid #ccc;
@@ -95,6 +140,16 @@
     </style>
 </head>
 <body>
+    <div class="navbar">
+        <div class="navbar-left"> Git Repo Stats </div>
+        <div class="navbar-right">
+            <a href="https://github.com/DennisTurco/GitRepoStats" target="_blank">GitHub Repo</a>
+            <a href="https://github.com/DennisTurco/GitRepoStats#readme" target="_blank">Documentation</a>
+            <a href="https://www.paypal.com/donate/?hosted_button_id=M7CJXS929334U" target="_blank" class="donate-btn">💖 Donate</a>
+            
+        </div>
+    </div>
+
     <h1 style="display: flex; align-items: center; gap: 10px;">
         <img src="https://raw.githubusercontent.com/DennisTurco/GitRepoStats/master/imgs/logo64x64.ico"
             alt="Logo" width="64" height="64">
