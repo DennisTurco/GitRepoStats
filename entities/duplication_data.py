@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-
 from entities.lizard_data import LizardData
 
 @dataclass

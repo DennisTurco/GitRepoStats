@@ -29,7 +29,7 @@ With Git Repo Stats, you can:
 
 ### Example Output
 
-View an example report generated [📄 Redis stats example .html](./docs/redis_stats_example.html) from scanning redis repo (you can view the github project of redis from [here](https://github.com/redis/redis))
+View an example report generated [📄 Redis stats example .html](./docs/redis_stats_example.html) from scanning redis repo (you can view the github project of redis from [Redis GitHub Repo](https://github.com/redis/redis))
 
 ## Usage
 
@@ -41,7 +41,24 @@ The only requirement is that you are able to clone the repository on your local 
 3. in "Workspace path" field, insert the absolute path of the GitHub project root you want to scan.
 4. Press the "Get stats" button to start the project analysis.
 
+Git Repo Stats uses a **configuration file** located in: "./config/preferences.yaml"
+
+This file defines how the tool performs code ownership, duplication, and complexity analysis.
+You can customize thresholds, excluded files, and other rules according to your project’s needs.
+
+<aside>
+Notes:
+
+- All thresholds can be tuned to make the analysis more or less strict.
+- Lists (like ExcludeFiles) can contain one or more entries.
+- Missing fields will be replaced with default values automatically.
+- The YAML file is read at runtime — you can modify it without recompiling or restarting the app.
+
+</aside>
+
+<aside>
 Note: *The larger the project (and the fewer filters you apply), the longer the analysis will take.*
+</aside>
 
 ## 🐛 Report a BUG
 

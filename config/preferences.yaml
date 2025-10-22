@@ -1,0 +1,54 @@
+# ============================================================
+# Configuration for Repository Analysis
+# These options control how the tool analyzes code, duplication,
+# and code ownership (bus factor).
+# ============================================================
+
+CodeOwnership:
+  # List of file extensions to exclude from code ownership (e.g., binary or image files)
+  ExcludeFiles:
+    - .png
+    - .svg
+    - .jpg
+    - .jpeg
+    - .gif
+    - .exe
+    - .dll
+    - .so
+    - .log
+    - .ico
+
+  # If the total number of authors is less than this threshold,
+  # all authors will be shown (even if they contributed 0%)
+  ShowZeroPercentAuthorsIfLessThan: 5
+
+
+CodeDuplication:
+  # Similarity threshold for considering two functions as duplicates.
+  # Lower values → more sensitive detection (may include false positives).
+  Threshold: 5.0
+
+  # How many neighboring functions to compare for duplication.
+  # Higher = slower but more thorough.
+  WindowSize: 5
+
+  # Maximum allowed Hamming distance between pre-hashed functions.
+  # Higher = allows more dissimilar hashes to be compared.
+  MaxHammingDiff: 10
+
+  # Maximum allowed difference in number of lines of code (NLOC) between two functions.
+  # Higher = allows comparison between functions of different lengths.
+  MaxNlocDiff: 100
+
+
+CodeComplexity:
+  # File extensions to exclude from code complexity analysis.
+  # Useful for ignoring non-core or third-party code.
+  ExcludeExtensions:
+    - js
+    - json
+
+  # Function names to exclude from analysis (e.g., auto-generated or anonymous).
+  ExcludeFunctions:
+    - "(anonymous)"
+    - ""

@@ -16,6 +16,7 @@ from entities.stats.author_stats import AuthorStats
 from entities.stats.file_stats import FileStats
 from entities.stats.branch_stats import BranchStats
 from entities.period_filter import PeriodFilter
+from preference_reader import PreferenceReader
 
 class RepoManagement:
 
@@ -29,6 +30,7 @@ class RepoManagement:
         self.period = period
         self.report_config = report_config
         self.repo_name = self.__get_repo_name_from_path(repo_path)
+        self.configs = PreferenceReader.read_preferences_from_yaml()
 
     def __get_repo_name_from_path(self, repo_path) -> str:
         pos = 0
@@ -93,23 +95,26 @@ class RepoManagement:
             Logger.write_log(f"An error occurred while reading file {filename}: {e}", log_box=self.log_box, log_type=Logger.LogType.WARN)
             return ""
 
-    def __find_possible_duplicates(self, stats: list[LizardData], threshold: float = 5.0) -> list[DuplicationData]:
+    def __find_possible_duplicates(self, stats: list[LizardData]) -> list[DuplicationData]:
         Logger.write_log("Analyzing code duplication (prehashed)...", log_box=self.log_box)
         duplicates: list[DuplicationData] = []
 
         stats.sort(key=lambda s: s.hash_value)
 
-        window_size = 5  # checks only neighbours
+        window_size = self.configs.CodeDuplication.WindowSize  # checks only neighbours
+        max_hamming_diff = self.configs.CodeDuplication.MaxHammingDiff
+        max_nloc_diff = self.configs.CodeDuplication.MaxNlocDiff
+        threshold = self.configs.CodeDuplication.Threshold
         for i, ld1 in enumerate(stats):
             for j in range(i + 1, min(i + window_size, len(stats))):
                 ld2 = stats[j]
-                
+
                 # check fast hamming difference
                 hamming_dist = bin(ld1.hash_value ^ ld2.hash_value).count("1")
-                if hamming_dist > 10:
+                if hamming_dist > max_hamming_diff:
                     continue
 
-                if abs(ld1.nloc - ld2.nloc) >= 100:
+                if abs(ld1.nloc - ld2.nloc) >= max_nloc_diff:
                     continue
 
                 score = ld1.similarity_score(ld2)
@@ -121,7 +126,7 @@ class RepoManagement:
 
 
     def __skip_function_from_analysis(self, function_name: str, start_line: int, end_line: int, file_extension: str) -> bool:
-        return file_extension == "js" or function_name == "" or function_name == "(anonymous)" or start_line == end_line
+        return file_extension in self.configs.CodeComplexity.ExcludeExtensions or function_name in self.configs.CodeComplexity.ExcludeFunctions or start_line == end_line
 
     def __get_bus_factor_data(self, authors: list[Author]) -> list[BusFactorData]:
         Logger.write_log("Calculating code ownership by file stats...", log_box=self.log_box)
@@ -131,7 +136,7 @@ class RepoManagement:
         tracked_files = self._repo_obj.git.ls_tree("-r", "--name-only", "HEAD").splitlines()
 
         for rel_path in tracked_files:
-            if rel_path.endswith((".png", ".jpg", ".jpeg", ".gif", ".exe", ".dll", ".so", ".svg", ".log", ".ico")):
+            if rel_path.endswith(tuple(self.configs.CodeOwnership.ExcludeFiles)):
                 continue
 
             try:
@@ -151,7 +156,7 @@ class RepoManagement:
         authors_count = defaultdict(int)
 
         # if there are not many authors we shows also the authors with 0% as total
-        if len(authors) <= 5:
+        if len(authors) <= self.configs.CodeOwnership.ShowZeroPercentAuthorsIfLessThan:
             for author in authors:
                 authors_count[author.main_username] = 0
 
@@ -312,7 +317,7 @@ class RepoManagement:
         return commits_stats
 
     def __get_branches_stats_list(self, authors: list[Author]) -> list[BranchStats]:
-        Logger.write_log("Getting ALL branches (local + remote)...", log_box=self.log_box)
+        Logger.write_log("Getting all branches (local + remote)...", log_box=self.log_box)
 
         branches = list(self._repo_obj.branches) + list(self._repo_obj.remotes.origin.refs)
         branches_stats = []
