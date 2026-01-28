@@ -1,4 +1,6 @@
+import sys
 import threading
+import subprocess as sp
 import customtkinter as ctk
 import datetime
 import tkinter as tk
@@ -63,6 +65,9 @@ class GUI(ctk.CTk):
 
         self.entry_end_date = ctk.CTkEntry(self.filters_frame, placeholder_text="DD-MM-YYYY")
         self.entry_end_date.grid(row=2, column=1, padx=(0, 5), pady=5, sticky="ew")
+
+        label_repopath = ctk.CTkButton(self.filters_frame, text="Open Configuration Output Yaml File", command=lambda: self.__open_yaml_file())
+        label_repopath.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
         self.stats_vars = {
             "author": tk.BooleanVar(value=True),
@@ -161,6 +166,19 @@ class GUI(ctk.CTk):
     def write_to_logbox(self, message: str) -> None:
         message = str(message).encode("utf-8", errors="replace").decode("utf-8")
         self.after(0, lambda: self.__append_to_log(message))
+
+    def __open_yaml_file(self):
+        file_name = "./config/preferences.yaml"
+
+        try:
+            if sys.platform.startswith("win"):
+                sp.Popen(["start", "", file_name], shell=True)
+            elif sys.platform.startswith("darwin"):  # macOS
+                sp.Popen(["open", file_name])
+            else:  # assume Linux/Unix
+                sp.Popen(["xdg-open", file_name])
+        except Exception as e:
+            print(f"Failed to open {file_name}: {e}")
 
     def __append_to_log(self, message: str) -> None:
         self.log_box.insert(tk.END, message + "\n")
