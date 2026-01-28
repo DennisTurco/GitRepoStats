@@ -15,7 +15,7 @@ class AuthorStats():
         return f"author: {self.author.main_username}, commits: {self.commits}, insertions: {self.insertions.total}, deletions: {self.deletions.total}, lines: {self.lines.total}, files: {self.files.total}"
 
     def to_csv(self) -> str:
-        return f"{self.author.main_username},{self.commits.total},{self.insertions.total},{self.deletions.total},{self.lines.total},{self.files.total}"
+        return f"{self.author.main_username},{self.commits},{self.insertions.total},{self.deletions.total},{self.lines.total},{self.files.total}"
 
     def has_stats(self) -> bool:
         return self.commits != 0 or self.insertions.total != 0 or self.deletions.total != 0 or self.lines.total != 0 or self.files.total != 0
