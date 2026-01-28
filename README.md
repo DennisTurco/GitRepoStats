@@ -50,7 +50,7 @@ You can customize thresholds, excluded files, and other rules according to your 
 Notes:
 
 - All thresholds can be tuned to make the analysis more or less strict.
-- Lists (like ExcludeFiles) can contain one or more entries.
+- Lists (like ExcludeExtensions) can contain one or more entries.
 - Missing fields will be replaced with default values automatically.
 - The YAML file is read at runtime — you can modify it without recompiling or restarting the app.
 

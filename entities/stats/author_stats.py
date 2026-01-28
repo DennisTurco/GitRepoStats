@@ -1,23 +1,24 @@
 from dataclasses import dataclass
 from entities.author import Author
+from entities.count_per_extension import CountPerExtension
 
 @dataclass
 class AuthorStats():
     author: Author
     commits: int
-    insertions: int
-    deletions: int
-    lines: int
-    files: int
+    insertions: CountPerExtension
+    deletions: CountPerExtension
+    lines: CountPerExtension
+    files: CountPerExtension
 
     def __str__(self) -> str:
-        return f"author: {self.author.main_username}, commits: {self.commits}, insertions: {self.insertions}, deletions: {self.deletions}, lines: {self.lines}, files: {self.files}"
+        return f"author: {self.author.main_username}, commits: {self.commits}, insertions: {self.insertions.total}, deletions: {self.deletions.total}, lines: {self.lines.total}, files: {self.files.total}"
 
     def to_csv(self) -> str:
-        return f"{self.author.main_username},{self.commits},{self.insertions},{self.deletions},{self.lines},{self.files}"
+        return f"{self.author.main_username},{self.commits.total},{self.insertions.total},{self.deletions.total},{self.lines.total},{self.files.total}"
 
     def has_stats(self) -> bool:
-        return self.commits != 0 or self.insertions != 0 or self.deletions != 0 or self.lines != 0 or self.files != 0
+        return self.commits != 0 or self.insertions.total != 0 or self.deletions.total != 0 or self.lines.total != 0 or self.files.total != 0
 
     @staticmethod
     def csv_header() -> str:
@@ -35,16 +36,16 @@ class AuthorStats():
 
     @staticmethod
     def sort_by_insertions(stats: list["AuthorStats"]) -> None:
-        stats.sort(key=lambda stat: stat.insertions)
+        stats.sort(key=lambda stat: stat.insertions.total)
 
     @staticmethod
     def sort_by_deletions(stats: list["AuthorStats"]) -> None:
-        stats.sort(key=lambda stat: stat.deletions)
+        stats.sort(key=lambda stat: stat.deletions.total)
 
     @staticmethod
     def sort_by_lines(stats: list["AuthorStats"]) -> None:
-        stats.sort(key=lambda stat: stat.lines)
+        stats.sort(key=lambda stat: stat.lines.total)
 
     @staticmethod
     def sort_by_files(stats: list["AuthorStats"]) -> None:
-        stats.sort(key=lambda stat: stat.files)
+        stats.sort(key=lambda stat: stat.files.total)

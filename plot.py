@@ -1,3 +1,4 @@
+import hashlib
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -24,59 +25,132 @@ class Plot:
         self.branch_stats = branch_stats
 
     def get_authors_html(self):
+        import plotly.graph_objects as go
+        from plotly.subplots import make_subplots
+
+        # ──────────────────────
+        # CONFIG
+        # ──────────────────────
+        COLOR_MAP = {
+            ".py": "#3572A5",
+            ".js": "#f1e05a",
+            ".ts": "#2b7489",
+            ".md": "#083fa1",
+            ".json": "#292929",
+            ".yml": "#cb171e",
+        }
+
+        METRICS = {
+            "insertions": lambda s: s.insertions.total,
+            "deletions": lambda s: s.deletions.total,
+            "lines": lambda s: s.lines.total,
+            "files": lambda s: s.files.total,
+        }
+
+        # ──────────────────────
+        # FIGURE
+        # ──────────────────────
         fig = make_subplots(
-            rows=3, cols=2,
+            rows=3,
+            cols=2,
             subplot_titles=(
-                "Commits per Author", "Insertions per Author",
-                "Deletions per Author", "Lines per Author",
-                "Files per Author", ""
+                "Commits per Author",
+                "Insertions per Author",
+                "Deletions per Author",
+                "Lines (insertions + deletions) per Author",
+                "Files per Author",
+                "",
             ),
             vertical_spacing=0.2,
-            horizontal_spacing=0.1
+            horizontal_spacing=0.1,
         )
 
-        AuthorStats.sort_by_commits(self.author_stats)
-        dataframe_author_commits = pd.DataFrame({
-            "Authors": [s.author.main_username for s in self.author_stats],
-            "Commits": [s.commits for s in self.author_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_author_commits["Authors"], y=dataframe_author_commits["Commits"], name="Commits"), row=1, col=1)
+        # ──────────────────────
+        # GLOBAL EXTENSIONS (ONCE)
+        # ──────────────────────
+        extensions = sorted({
+            ext
+            for s in self.author_stats
+            for metric in METRICS
+            for ext in getattr(s, metric).per_extension.keys()
+        }, reverse=False)
 
-        AuthorStats.sort_by_insertions(self.author_stats)
-        dataframe_author_insertions = pd.DataFrame({
-            "Authors": [s.author.main_username for s in self.author_stats],
-            "Insertions": [s.insertions for s in self.author_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_author_insertions["Authors"], y=dataframe_author_insertions["Insertions"], name="Insertions"), row=1, col=2)
+        # ──────────────────────
+        # COMMITS
+        # ──────────────────────
+        commits_stats = sorted(
+            self.author_stats,
+            key=lambda s: s.commits,
+            reverse=False,
+        )
 
-        AuthorStats.sort_by_deletions(self.author_stats)
-        dataframe_author_deletions = pd.DataFrame({
-            "Authors": [s.author.main_username for s in self.author_stats],
-            "Deletions": [s.deletions for s in self.author_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_author_deletions["Authors"], y=dataframe_author_deletions["Deletions"], name="Deletions"), row=2, col=1)
+        authors_commits = [s.author.main_username for s in commits_stats]
 
-        AuthorStats.sort_by_lines(self.author_stats)
-        dataframe_author_lines = pd.DataFrame({
-            "Authors": [s.author.main_username for s in self.author_stats],
-            "Lines": [s.lines for s in self.author_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_author_lines["Authors"], y=dataframe_author_lines["Lines"], name="Lines"), row=2, col=2)
+        fig.add_trace(
+            go.Bar(
+                x=authors_commits,
+                y=[s.commits for s in commits_stats],
+                name="Commits",
+                marker_color="#444",
+            ),
+            row=1,
+            col=1,
+        )
 
-        AuthorStats.sort_by_files(self.author_stats)
-        dataframe_author_files = pd.DataFrame({
-            "Authors": [s.author.main_username for s in self.author_stats],
-            "Files": [s.files for s in self.author_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_author_files["Authors"], y=dataframe_author_files["Files"], name="Files"), row=3, col=1)
+        def color_for_extension(ext: str) -> str:
+            if ext in COLOR_MAP:
+                return COLOR_MAP[ext]
 
+            # colore deterministico da hash
+            h = hashlib.md5(ext.encode()).hexdigest()
+            return f"#{h[:6]}"
+
+        # ──────────────────────
+        # STACKED METRICS
+        # ──────────────────────
+        def add_stacked_metric(row, col, attr, sort_key):
+            stats = sorted(self.author_stats, key=sort_key, reverse=False)
+            authors = [s.author.main_username for s in stats]
+
+            for ext in extensions:
+                fig.add_trace(
+                    go.Bar(
+                        x=authors,
+                        y=[
+                            getattr(s, attr).per_extension.get(ext, 0)
+                            for s in stats
+                        ],
+                        name=ext,
+                        legendgroup=ext,
+                        showlegend=(row == 1 and col == 2),
+                        marker_color=color_for_extension(ext),
+                    ),
+                    row=row,
+                    col=col,
+                )
+
+        positions = [(1, 2), (2, 1), (2, 2), (3, 1)]
+
+        for (row, col), (attr, key) in zip(positions, METRICS.items()):
+            add_stacked_metric(row, col, attr, key)
+
+        # ──────────────────────
+        # LAYOUT
+        # ──────────────────────
         fig.update_layout(
-            margin=dict(l=100, r=100, t=100, b=100),
+            barmode="stack",
+            legend=dict(
+                groupclick="togglegroup",
+                title="File extensions",
+            ),
+            margin=dict(l=100, r=120, t=100, b=100),
             height=1400,
-            width=1800
+            width=1800,
         )
 
-        return fig.to_html(full_html=False, include_plotlyjs='cdn')
+        return fig.to_html(full_html=False, include_plotlyjs="cdn")
+
+
 
     def get_files_html(self):
         fig = make_subplots(rows=1, cols=1, subplot_titles=("Changes Count", "Files"))

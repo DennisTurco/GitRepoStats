@@ -1,5 +1,5 @@
 import yaml
-from entities.preferences import (CodeComplexityPreference, CodeDuplicationPreference, CodeOwnershipPreference, Preferences)
+from entities.preferences import (AuthorStatsPreferences, CodeComplexityPreference, CodeDuplicationPreference, CodeOwnershipPreference, Preferences)
 
 PREFERENCE_FILE_PATH = './config/preferences.yaml'
 
@@ -11,15 +11,19 @@ class PreferenceReader:
                 config = yaml.safe_load(stream)
 
                 try:
+                    author_stats = config['AuthorStats']
                     code_ownership = config['CodeOwnership']
                     code_duplication = config['CodeDuplication']
                     code_complexity = config['CodeComplexity']
                 except KeyError as e:
-                    raise KeyError(f"Sezione mancante nel file YAML: {e}")
+                    raise KeyError(f"Missing section on file YAML: {e}")
 
                 try:
+                    author_stats_pref = AuthorStatsPreferences(
+                        author_stats['ExcludeExtensions']
+                    )
                     code_ownership_pref = CodeOwnershipPreference(
-                        code_ownership['ExcludeFiles'],
+                        code_ownership['ExcludeExtensions'],
                         code_ownership['ShowZeroPercentAuthorsIfLessThan']
                     )
                     code_duplication_pref = CodeDuplicationPreference(
@@ -36,6 +40,7 @@ class PreferenceReader:
                     raise KeyError(f"Missing key in the YAML file: {e}")
 
                 return Preferences(
+                    author_stats_pref,
                     code_ownership_pref,
                     code_duplication_pref,
                     CodeComplexity=code_complexity_pref

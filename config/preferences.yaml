@@ -4,19 +4,57 @@
 # and code ownership (bus factor).
 # ============================================================
 
+AuthorStats:
+  ExcludeExtensions:
+    - png
+    - svg
+    - jpg
+    - jpeg
+    - gif
+    - exe
+    - dll
+    - so
+    - log
+    - ico
+    - json
+    - yaml
+    - yml
+    - csv
+    - eot
+    - woff
+    - woff2
+    - ttf
+    - otf
+    - webp
+    - csproj
+    - sqlproj
+    - sfproj
+    - esproj
+    - sln
+    - targets
+    - props
+    - nuspec
+    - template
+    - master
+    - refactorlog
+    - config
+    - conf
+    - ini
+    - xml
+    - sample
 CodeOwnership:
   # List of file extensions to exclude from code ownership (e.g., binary or image files)
-  ExcludeFiles:
-    - .png
-    - .svg
-    - .jpg
-    - .jpeg
-    - .gif
-    - .exe
-    - .dll
-    - .so
-    - .log
-    - .ico
+  ExcludeExtensions:
+    - png
+    - svg
+    - jpg
+    - jpeg
+    - gif
+    - exe
+    - dll
+    - so
+    - log
+    - ico
 
   # If the total number of authors is less than this threshold,
   # all authors will be shown (even if they contributed 0%)

@@ -2,6 +2,7 @@ import os
 from git import Repo
 from dashboard import Dashboard
 from entities.bus_factor_data import BusFactorData, FileOwner
+from entities.count_per_extension import CountPerExtension
 from entities.duplication_data import DuplicationData
 from logger import Logger
 from plot import Plot
@@ -136,7 +137,7 @@ class RepoManagement:
         tracked_files = self._repo_obj.git.ls_tree("-r", "--name-only", "HEAD").splitlines()
 
         for rel_path in tracked_files:
-            if rel_path.endswith(tuple(self.configs.CodeOwnership.ExcludeFiles)):
+            if rel_path.endswith(tuple(self.configs.CodeOwnership.ExcludeExtensions)):
                 continue
 
             try:
@@ -257,20 +258,35 @@ class RepoManagement:
     def __get_authors_stats_list(self, authors: list[Author]) -> list[AuthorStats]:
         Logger.write_log("Getting authors stats list...", log_box=self.log_box)
 
-        author_stats_map = {author.main_username: AuthorStats(author, 0, 0, 0, 0, 0) for author in authors}
+        author_stats_map = {author.main_username: AuthorStats(author, 0, CountPerExtension(), CountPerExtension(), CountPerExtension(), CountPerExtension()) for author in authors}
 
         for commit in self.__iter_filtered_commits():
             author = self.__find_author(commit.author.email, authors)
             if not author:
                 continue
 
-            stats = commit.stats.total
             a_stats = author_stats_map[author.main_username]
             a_stats.commits += 1
-            a_stats.insertions += stats.get('insertions', 0)
-            a_stats.deletions += stats.get('deletions', 0)
-            a_stats.lines += stats.get('lines', 0)
-            a_stats.files += stats.get('files', 0)
+
+            for file, file_stats in commit.stats.files.items():
+                ext = self.__get_extension_from_file(file)
+                ext = ext.lower().strip()
+
+                if self.__skip_author_stat_from_analysis(ext) or ext == '':
+                    continue
+
+                a_stats.insertions.total += file_stats.get("insertions", 0)
+                a_stats.insertions.per_extension[ext] += file_stats.get("insertions", 0)
+
+                a_stats.deletions.total += file_stats.get("deletions", 0)
+                a_stats.deletions.per_extension[ext] += file_stats.get("deletions", 0)
+
+                lines = file_stats.get("lines", 0)
+                a_stats.lines.total += lines
+                a_stats.lines.per_extension[ext] += lines
+
+                a_stats.files.total += 1
+                a_stats.files.per_extension[ext] += 1
 
         Logger.write_log(f"Author stats list obtained ({len(author_stats_map)})", log_box=self.log_box)
 
@@ -281,6 +297,9 @@ class RepoManagement:
                 authors_ok.append(author)
 
         return authors_ok
+
+    def __skip_author_stat_from_analysis(self, file_extension: str) -> bool:
+        return file_extension in self.configs.AuthorStat.ExcludeExtensions
 
     def __get_files_stats_list(self, authors: list[Author]) -> list[FileStats]:
         Logger.write_log("Getting files stats list...", log_box=self.log_box)
