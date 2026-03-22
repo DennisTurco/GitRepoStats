@@ -144,7 +144,7 @@ class Dashboard:
                 "order": []
             }});
             $('#tableCodeComplexitySummary').DataTable({{
-                "order": [],
+                "order": [2, "desc"],
                 "paging": false,
                 "searching": false,
                 "lengthChange": false,
@@ -158,12 +158,12 @@ class Dashboard:
             $('#tableCodeDuplication').DataTable({{
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
-                "order": []
+                "order": [0]
             }});
             $('#tableBusFactorSummary').DataTable({{
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
-                "order": []
+                "order": [2, "desc"]
             }});
             $('#tableBusFactor').DataTable({{
                 "pageLength": 20,
