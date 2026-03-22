@@ -15,6 +15,7 @@ class Data:
     chart_cumulative_branches_html: str
     csv_file_stats: list[str]
     csv_branches_stats: list[str]
+    csv_code_complexity_summary: list[str]
     csv_code_complexity: list[str]
     csv_code_duplication: list[str]
     csv_bus_factor_summary: list[str]

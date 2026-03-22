@@ -1,3 +1,4 @@
+from collections import defaultdict
 import difflib
 from enum import Enum
 from dataclasses import dataclass, field
@@ -21,6 +22,16 @@ class Status(Enum):
         return {Status.HEALTHY: "✅", Status.NEEDS_ATTENTION: "⚠️", Status.AT_RISK: "❌"}[self]
 
 
+
+nloc_healthy_limit = 30
+nloc_warning_limit = 100
+ccn_healthy_limit = 10
+ccn_warning_limit = 20
+token_healthy_limit = 100
+token_warning_limit = 500
+param_healthy_limit = 4
+param_warning_limit = 7
+
 @dataclass
 class LizardData:
     nloc: int  # Number of Lines of Code
@@ -33,10 +44,11 @@ class LizardData:
     status: Status = field(init=False)
     hash_value: Optional[int] = field(init=False, repr=False)
 
+
     def __post_init__(self):
-        if self.nloc <= 30 and self.ccn <= 10 and self.token <= 100 and self.param <= 4:
+        if self.nloc <= nloc_healthy_limit and self.ccn <= ccn_healthy_limit and self.token <= token_healthy_limit and self.param <= param_healthy_limit:
             self.status = Status.HEALTHY
-        elif self.nloc <= 100 and self.ccn <= 20 and self.token <= 500 and self.param <= 7:
+        elif self.nloc <= nloc_warning_limit and self.ccn <= ccn_warning_limit and self.token <= token_warning_limit and self.param <= param_warning_limit:
             self.status = Status.NEEDS_ATTENTION
         else:
             self.status = Status.AT_RISK
@@ -70,11 +82,61 @@ class LizardData:
         return f"{self.status.to_emoji()}|{self.nloc}|{self.ccn}|{self.token}|{self.param}|{self.length}|{self.location.function}|{self.location.lines}|{self.location.file}"
 
     @staticmethod
+    def csv_header_summary() -> str:
+        return "Status|Category|ValueAvg"
+
+    @staticmethod
     def csv_header() -> str:
         return "Status|NLOC|CCN|Token|Param|Length|Function|Lines|File"
+
+    @staticmethod
+    def to_csv_data_list_summary(stats: list["LizardData"], header: bool = True) -> list[str]:
+        data = [LizardData.csv_header_summary()] if header else []
+
+        complexity_grouped: defaultdict[str, int] = defaultdict(int)
+        for stat in stats:
+            complexity_grouped["nloc"] += stat.nloc
+            complexity_grouped["ccn"] += stat.ccn
+            complexity_grouped["token"] += stat.token
+            complexity_grouped["param"] += stat.param
+
+        total_elem = len(stats)
+        for cg_key, cg_value in complexity_grouped.items():
+            avg_value = cg_value / total_elem
+            status = LizardData.__get_status_based_on_type(cg_key, int(avg_value))
+            data.append(f"{status.to_emoji()}|{cg_key}|{avg_value:.2f}")
+
+        return data
 
     @staticmethod
     def to_csv_data_list(stats: list["LizardData"], header: bool = True) -> list[str]:
         data = [LizardData.csv_header()] if header else []
         data += [stat.to_csv() for stat in stats]
         return data
+
+    @staticmethod
+    def __get_status_based_on_type(type: str, value: int) -> Status:
+        healthy_limit = 0
+        warning_limit = 0
+        match type:
+            case "nloc":
+                healthy_limit = nloc_healthy_limit
+                warning_limit = nloc_warning_limit
+            case "ccn":
+                healthy_limit = ccn_healthy_limit
+                warning_limit = ccn_warning_limit
+            case "token":
+                healthy_limit = token_healthy_limit
+                warning_limit = token_warning_limit
+            case "param":
+                healthy_limit = param_healthy_limit
+                warning_limit = param_warning_limit
+            case _:
+                raise ValueError(f"type '{type}' is not valid")
+        return LizardData.__get_status_by_values(value, healthy_limit, warning_limit)
+
+    @staticmethod
+    def __get_status_by_values(value: int, healthy_limit: int, warning_limit: int):
+        if value <= healthy_limit: return Status.HEALTHY
+        if value <= warning_limit: return Status.NEEDS_ATTENTION
+        return Status.AT_RISK

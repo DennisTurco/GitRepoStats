@@ -14,6 +14,9 @@ class Dashboard:
             data_table_branches = Dashboard.__list_to_html_table(
                 data.csv_branches_stats, "tableBranches"
             )
+            data_table_code_complexity_summary = Dashboard.__list_to_html_table(
+                data.csv_code_complexity_summary, "tableCodeComplexitySummary", "|"
+            )
             data_table_code_complexity = Dashboard.__list_to_html_table(
                 data.csv_code_complexity, "tableCodeComplexity", "|"
             )
@@ -30,6 +33,7 @@ class Dashboard:
                 data,
                 data_table_files,
                 data_table_branches,
+                data_table_code_complexity_summary,
                 data_table_code_complexity,
                 data_table_code_duplication,
                 data_table_bus_factor_summary,
@@ -106,6 +110,7 @@ class Dashboard:
         data: Data,
         data_table_files: str,
         data_table_branches: str,
+        data_table_code_complexity_summary: str,
         data_table_code_complexity: str,
         data_table_code_duplication: str,
         data_table_bus_factor_summary: str,
@@ -137,6 +142,13 @@ class Dashboard:
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
                 "order": []
+            }});
+            $('#tableCodeComplexitySummary').DataTable({{
+                "order": [],
+                "paging": false,
+                "searching": false,
+                "lengthChange": false,
+                "info": false
             }});
             $('#tableCodeComplexity').DataTable({{
                 "pageLength": 20,
@@ -332,6 +344,11 @@ class Dashboard:
                 </p>
             </aside>
         </details>
+
+        <h3> Code Complexity Summary</h3>
+        {data_table_code_complexity_summary}
+
+        <h3> Code Complexity Details</h3>
         {data_table_code_complexity}
 
         <h2> Code Duplication Detection </h2>

@@ -491,10 +491,10 @@ class RepoManagement:
         Logger.write_log("Preparing data for plotting", log_box=self.log_box)
 
         plot = Plot()
-        plot.init_dataframe_authors(all_stats)
-        plot.init_dataframe_files(file_stats)
-        plot.init_dataframe_commits(commits_stats)
-        plot.init_dataframe_branches(branches_stats)
+        if all_stats is not None: plot.init_dataframe_authors(all_stats)
+        if file_stats is not None: plot.init_dataframe_files(file_stats)
+        if commits_stats is not None: plot.init_dataframe_commits(commits_stats)
+        if branches_stats is not None: plot.init_dataframe_branches(branches_stats)
 
         authors_html = plot.get_authors_html() if self.report_config.authors else ""
         files_html = plot.get_files_html() if self.report_config.files else ""
@@ -515,6 +515,11 @@ class RepoManagement:
         csv_branches = (
             BranchStats.to_csv_data_list(branches_stats)
             if self.report_config.branches and branches_stats
+            else ["No data available"]
+        )
+        csv_code_complexity_summary = (
+            LizardData.to_csv_data_list_summary(code_complexity)
+            if self.report_config.code_complexity and code_complexity
             else ["No data available"]
         )
         csv_code_complexity = (
@@ -550,6 +555,7 @@ class RepoManagement:
             cumulative_branches_html,
             csv_files,
             csv_branches,
+            csv_code_complexity_summary,
             csv_code_complexity,
             csv_code_duplication,
             csv_bus_factor_summary,
