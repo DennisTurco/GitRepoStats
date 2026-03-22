@@ -10,6 +10,7 @@ from entities.report_config import ReportConfig
 from logger import Logger
 from repo_management import RepoManagement
 
+
 class GUI(ctk.CTk):
     app_width, app_height = 950, 500
     last_code_complexity: bool = True
@@ -21,7 +22,7 @@ class GUI(ctk.CTk):
         self.init_frame()
 
     def init_window(self) -> None:
-        self.iconbitmap('./imgs/logo.ico')
+        self.iconbitmap("./imgs/logo.ico")
         ctk.set_appearance_mode("System")
         ctk.set_default_color_theme("green")
         self.title("Git Repo Stats")
@@ -33,7 +34,7 @@ class GUI(ctk.CTk):
         screen_height = self.winfo_screenheight()
         x = (screen_width / 2) - (self.app_width / 2)
         y = (screen_height / 2) - (self.app_height / 2)
-        self.geometry(f'{self.app_width}x{self.app_height}+{int(x)}+{int(y)}')
+        self.geometry(f"{self.app_width}x{self.app_height}+{int(x)}+{int(y)}")
 
     def init_frame(self) -> None:
         self.grid_columnconfigure(0, weight=0)
@@ -51,7 +52,9 @@ class GUI(ctk.CTk):
         label_repopath = ctk.CTkLabel(self.filters_frame, text="Workspace path:")
         label_repopath.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-        self.entry_repopath = ctk.CTkEntry(self.filters_frame, placeholder_text="local repo to scan")
+        self.entry_repopath = ctk.CTkEntry(
+            self.filters_frame, placeholder_text="local repo to scan"
+        )
         self.entry_repopath.grid(row=0, column=1, padx=(0, 5), pady=5, sticky="ew")
 
         label_start_date = ctk.CTkLabel(self.filters_frame, text="Start date (Optional):")
@@ -66,7 +69,11 @@ class GUI(ctk.CTk):
         self.entry_end_date = ctk.CTkEntry(self.filters_frame, placeholder_text="DD-MM-YYYY")
         self.entry_end_date.grid(row=2, column=1, padx=(0, 5), pady=5, sticky="ew")
 
-        label_repopath = ctk.CTkButton(self.filters_frame, text="Open Configuration Output Yaml File", command=lambda: self.__open_yaml_file())
+        label_repopath = ctk.CTkButton(
+            self.filters_frame,
+            text="Open Configuration Output Yaml File",
+            command=lambda: self.__open_yaml_file(),
+        )
         label_repopath.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
         self.stats_vars = {
@@ -76,19 +83,54 @@ class GUI(ctk.CTk):
             "files": tk.BooleanVar(value=True),
             "codecomplexity": tk.BooleanVar(value=True),
             "codeduplication": tk.BooleanVar(value=True),
-            "busfactor": tk.BooleanVar(value=True)
+            "busfactor": tk.BooleanVar(value=True),
         }
 
         checkbox_frame = ctk.CTkFrame(self.filters_frame)
         checkbox_frame.grid(row=3, column=0, columnspan=2, pady=10, sticky="w")
 
-        self.check_author = ctk.CTkCheckBox(checkbox_frame, text="Author stats", variable=self.stats_vars["author"], command=self.ensure_one_checked)
-        self.check_commits = ctk.CTkCheckBox(checkbox_frame, text="Commits stats", variable=self.stats_vars["commits"], command=self.ensure_one_checked)
-        self.check_branches = ctk.CTkCheckBox(checkbox_frame, text="Branches stats", variable=self.stats_vars["branches"], command=self.ensure_one_checked)
-        self.check_files = ctk.CTkCheckBox(checkbox_frame, text="File stats", variable=self.stats_vars["files"], command=self.ensure_one_checked)
-        self.check_code_complexity = ctk.CTkCheckBox(checkbox_frame, text="Code Complexity", variable=self.stats_vars["codecomplexity"], command=self.ensure_one_checked)
-        self.check_code_duplication = ctk.CTkCheckBox(checkbox_frame, text="Code Duplication", variable=self.stats_vars["codeduplication"], command=self.ensure_one_checked)
-        self.check_bus_factor = ctk.CTkCheckBox(checkbox_frame, text="Code Ownership", variable=self.stats_vars["busfactor"], command=self.ensure_one_checked)
+        self.check_author = ctk.CTkCheckBox(
+            checkbox_frame,
+            text="Author stats",
+            variable=self.stats_vars["author"],
+            command=self.ensure_one_checked,
+        )
+        self.check_commits = ctk.CTkCheckBox(
+            checkbox_frame,
+            text="Commits stats",
+            variable=self.stats_vars["commits"],
+            command=self.ensure_one_checked,
+        )
+        self.check_branches = ctk.CTkCheckBox(
+            checkbox_frame,
+            text="Branches stats",
+            variable=self.stats_vars["branches"],
+            command=self.ensure_one_checked,
+        )
+        self.check_files = ctk.CTkCheckBox(
+            checkbox_frame,
+            text="File stats",
+            variable=self.stats_vars["files"],
+            command=self.ensure_one_checked,
+        )
+        self.check_code_complexity = ctk.CTkCheckBox(
+            checkbox_frame,
+            text="Code Complexity",
+            variable=self.stats_vars["codecomplexity"],
+            command=self.ensure_one_checked,
+        )
+        self.check_code_duplication = ctk.CTkCheckBox(
+            checkbox_frame,
+            text="Code Duplication",
+            variable=self.stats_vars["codeduplication"],
+            command=self.ensure_one_checked,
+        )
+        self.check_bus_factor = ctk.CTkCheckBox(
+            checkbox_frame,
+            text="Code Ownership",
+            variable=self.stats_vars["busfactor"],
+            command=self.ensure_one_checked,
+        )
 
         self.check_author.pack(side="left", padx=5)
         self.check_commits.pack(side="left", padx=5)
@@ -107,15 +149,23 @@ class GUI(ctk.CTk):
         self.log_box.tag_config("[warn]", foreground="orange")
         self.log_box.tag_config("[error]", foreground="red")
 
-        self.get_button = ctk.CTkButton(self, text="Get stats", border_width=2, command=self.run_get_stats_thread)
+        self.get_button = ctk.CTkButton(
+            self, text="Get stats", border_width=2, command=self.run_get_stats_thread
+        )
         self.get_button.grid(row=2, column=0, columnspan=2, pady=15, sticky="s")
 
     def ensure_one_checked(self):
         self.__check_at_least_one_if_necessary()
-        if self.stats_vars["codecomplexity"].get() != self.last_code_complexity and self.last_code_duplication:
+        if (
+            self.stats_vars["codecomplexity"].get() != self.last_code_complexity
+            and self.last_code_duplication
+        ):
             self.stats_vars["codeduplication"].set(False)
             self.__check_at_least_one_if_necessary()
-        elif self.stats_vars["codeduplication"].get() != self.last_code_duplication and not self.last_code_complexity:
+        elif (
+            self.stats_vars["codeduplication"].get() != self.last_code_duplication
+            and not self.last_code_complexity
+        ):
             self.stats_vars["codecomplexity"].set(True)
 
         self.last_code_complexity = self.stats_vars["codecomplexity"].get()
@@ -129,14 +179,24 @@ class GUI(ctk.CTk):
         start_date_str = self.entry_start_date.get().strip()
         end_date_str = self.entry_end_date.get().strip()
         try:
-            start_date = datetime.datetime.strptime(start_date_str, "%d-%m-%Y") if start_date_str else None
-            end_date = datetime.datetime.strptime(end_date_str, "%d-%m-%Y") if end_date_str else None
+            start_date = (
+                datetime.datetime.strptime(start_date_str, "%d-%m-%Y") if start_date_str else None
+            )
+            end_date = (
+                datetime.datetime.strptime(end_date_str, "%d-%m-%Y") if end_date_str else None
+            )
         except ValueError:
-            Logger.write_log("Invalid date format, use DD-MM-YYYY", log_box=self, log_type=Logger.LogType.ERROR)
+            Logger.write_log(
+                "Invalid date format, use DD-MM-YYYY", log_box=self, log_type=Logger.LogType.ERROR
+            )
             return None, None
 
         if start_date and end_date and end_date < start_date:
-            Logger.write_log("End date cannot be earlier than start date", log_box=self, log_type=Logger.LogType.ERROR)
+            Logger.write_log(
+                "End date cannot be earlier than start date",
+                log_box=self,
+                log_type=Logger.LogType.ERROR,
+            )
             return None, None
 
         return start_date, end_date
@@ -144,22 +204,36 @@ class GUI(ctk.CTk):
     def run_get_stats_thread(self) -> None:
         repo_path = self.entry_repopath.get()
         start_date, end_date = self.get_dates()
-        if start_date is None and end_date is None and (
-            self.entry_start_date.get().strip() or self.entry_end_date.get().strip()
+        if (
+            start_date is None
+            and end_date is None
+            and (self.entry_start_date.get().strip() or self.entry_end_date.get().strip())
         ):
             return
-        threading.Thread(target=self.get_stats, args=(repo_path, start_date, end_date), daemon=True).start()
+        threading.Thread(
+            target=self.get_stats, args=(repo_path, start_date, end_date), daemon=True
+        ).start()
 
     def get_stats(self, repo_path: str, start_date, end_date) -> None:
         try:
             self.get_button.configure(state="disabled")
             period = PeriodFilter(start_date, end_date)
-            report_config = ReportConfig(self.stats_vars["author"].get(), self.stats_vars["commits"].get(), self.stats_vars["branches"].get(), self.stats_vars["files"].get(), self.stats_vars["codecomplexity"].get(), self.stats_vars["codeduplication"].get(), self.stats_vars["busfactor"].get())
+            report_config = ReportConfig(
+                self.stats_vars["author"].get(),
+                self.stats_vars["commits"].get(),
+                self.stats_vars["branches"].get(),
+                self.stats_vars["files"].get(),
+                self.stats_vars["codecomplexity"].get(),
+                self.stats_vars["codeduplication"].get(),
+                self.stats_vars["busfactor"].get(),
+            )
 
             repo = RepoManagement(repo_path, self, period, report_config)
             repo.obtain_all_info_from_repo()
         except Exception as e:
-            Logger.write_log(message="Unexpected error", log_type=Logger.LogType.ERROR, log_box=self, exception=e)
+            Logger.write_log(
+                message="Unexpected error", log_type=Logger.LogType.ERROR, log_box=self, exception=e
+            )
         finally:
             self.get_button.configure(state="normal")
 
@@ -190,9 +264,7 @@ class GUI(ctk.CTk):
         date_end_index = second_space if second_space != -1 else first_space
         if date_end_index != -1:
             self.log_box.tag_add(
-                "date",
-                f"{start_index} + 0c",
-                f"{start_index} + {date_end_index}c"
+                "date", f"{start_index} + 0c", f"{start_index} + {date_end_index}c"
             )
 
         log_types = ["[INFO]", "[DEBUG]", "[WARN]", "[ERROR]"]
@@ -203,7 +275,7 @@ class GUI(ctk.CTk):
                 self.log_box.tag_add(
                     log_type.lower(),
                     f"{start_index} + {type_start}c",
-                    f"{start_index} + {type_end}c"
+                    f"{start_index} + {type_end}c",
                 )
                 break
 

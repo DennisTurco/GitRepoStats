@@ -1,12 +1,12 @@
 from entities.author import Author
+from datetime import datetime
 
-class CommitStats():
-
+class CommitStats:
     def __init__(self, name: str, author: Author, files_edited: int, date: str):
-        self.name = name
-        self.author = author
-        self.files_edited = files_edited
-        self.date = date.strftime("%Y-%m")
+        self.name: str = name
+        self.author: Author = author
+        self.files_edited: int = files_edited
+        self.date: datetime = date.strftime("%Y-%m")
 
     def __str__(self) -> str:
         return f"Commit: {self.name}, Author: {self.author.main_username}, FilesEdited: {self.files_edited}, Date: {self.date}"

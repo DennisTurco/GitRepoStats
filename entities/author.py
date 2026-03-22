@@ -1,15 +1,24 @@
 from typing import Optional
 
+
 class Author:
-    def __init__(self, main_email: str, main_username: str, usernames: Optional[list[str]] = None, emails: Optional[list[str]] = None) -> None:
+    def __init__(
+        self,
+        main_email: str,
+        main_username: str,
+        usernames: Optional[list[str]] = None,
+        emails: Optional[list[str]] = None,
+    ) -> None:
         self.main_email = main_email
         self.main_username = main_username
         self.usernames = usernames if usernames is not None else []
         self.emails = emails if emails is not None else [main_email]
 
     def __str__(self) -> str:
-        return (f"main_email: {self.main_email}, username: {self.main_username}, "
-                f"emails: {self.emails}, usernames: {self.usernames}")
+        return (
+            f"main_email: {self.main_email}, username: {self.main_username}, "
+            f"emails: {self.emails}, usernames: {self.usernames}"
+        )
 
     def get_pos_inside(self, authors: list["Author"]) -> int:
         for i in range(len(authors)):

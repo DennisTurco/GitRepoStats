@@ -5,17 +5,36 @@ from entities.data import Data
 
 FILE_PATH: str = "repo_stats.html"
 
-class Dashboard():
 
+class Dashboard:
     @staticmethod
     def generate_html_page(data: Data) -> None:
         with open(FILE_PATH, "w", encoding="utf-8") as f:
             data_table_files = Dashboard.__list_to_html_table(data.csv_file_stats, "tableFiles")
-            data_table_branches = Dashboard.__list_to_html_table(data.csv_branches_stats, "tableBranches")
-            data_table_code_complexity = Dashboard.__list_to_html_table(data.csv_code_complexity, "tableCodeComplexity", "|")
-            data_table_code_duplication = Dashboard.__list_to_html_table(data.csv_code_duplication, "tableCodeDuplication", "|")
-            data_table_bus_factor = Dashboard.__list_to_html_table(data.csv_bus_factor, "tableBusFactor")
-            html_page = Dashboard.__build_and_get_html_page(data, data_table_files, data_table_branches, data_table_code_complexity, data_table_code_duplication, data_table_bus_factor)
+            data_table_branches = Dashboard.__list_to_html_table(
+                data.csv_branches_stats, "tableBranches"
+            )
+            data_table_code_complexity = Dashboard.__list_to_html_table(
+                data.csv_code_complexity, "tableCodeComplexity", "|"
+            )
+            data_table_code_duplication = Dashboard.__list_to_html_table(
+                data.csv_code_duplication, "tableCodeDuplication", "|"
+            )
+            data_table_bus_factor_summary = Dashboard.__list_to_html_table(
+                data.csv_bus_factor_summary, "tableBusFactorSummary"
+            )
+            data_table_bus_factor = Dashboard.__list_to_html_table(
+                data.csv_bus_factor, "tableBusFactor"
+            )
+            html_page = Dashboard.__build_and_get_html_page(
+                data,
+                data_table_files,
+                data_table_branches,
+                data_table_code_complexity,
+                data_table_code_duplication,
+                data_table_bus_factor_summary,
+                data_table_bus_factor,
+            )
             f.write(html_page)
 
     @staticmethod
@@ -36,19 +55,37 @@ class Dashboard():
         # --- special case
         if table_id == "tableBusFactor":
             table_html = f"<table id='{table_id}' class='display'>\n"
-            table_html += "  <thead><tr>" + "".join(f"<th>{html.escape(str(col))}</th>" for col in header) + "</tr></thead>\n"
+            table_html += (
+                "  <thead><tr>"
+                + "".join(f"<th>{html.escape(str(col))}</th>" for col in header)
+                + "</tr></thead>\n"
+            )
             table_html += "  <tbody>\n"
             for row in normalized_body:
-                table_html += "    <tr>" + "".join(f"<td>{str(Dashboard.__truncate_with_tooltip(col))}</td>" for col in row) + "</tr>\n"
+                table_html += (
+                    "    <tr>"
+                    + "".join(
+                        f"<td>{str(Dashboard.__truncate_with_tooltip(col))}</td>" for col in row
+                    )
+                    + "</tr>\n"
+                )
             table_html += "  </tbody>\n</table>"
             return table_html
 
         # --- default table ---
         table_html = f"<table id='{table_id}' class='display'>\n"
-        table_html += "  <thead><tr>" + "".join(f"<th>{html.escape(str(col))}</th>" for col in header) + "</tr></thead>\n"
+        table_html += (
+            "  <thead><tr>"
+            + "".join(f"<th>{html.escape(str(col))}</th>" for col in header)
+            + "</tr></thead>\n"
+        )
         table_html += "  <tbody>\n"
         for row in normalized_body:
-            table_html += "    <tr>" + "".join(f"<td>{str(Dashboard.__truncate_with_tooltip(col))}</td>" for col in row) + "</tr>\n"
+            table_html += (
+                "    <tr>"
+                + "".join(f"<td>{str(Dashboard.__truncate_with_tooltip(col))}</td>" for col in row)
+                + "</tr>\n"
+            )
         table_html += "  </tbody>\n</table>"
 
         return table_html
@@ -61,12 +98,19 @@ class Dashboard():
         text = html.escape(str(text))
         if len(text) <= max_length:
             return text
-        truncated = "..." + text[len(text)-max_length:len(text)]
+        truncated = "..." + text[len(text) - max_length : len(text)]
         return truncated
 
-
     @staticmethod
-    def __build_and_get_html_page(data: Data, data_table_files: str, data_table_branches: str, data_table_code_complexity: str, data_table_code_duplication: str, data_table_bus_factor: str) -> str:
+    def __build_and_get_html_page(
+        data: Data,
+        data_table_files: str,
+        data_table_branches: str,
+        data_table_code_complexity: str,
+        data_table_code_duplication: str,
+        data_table_bus_factor_summary: str,
+        data_table_bus_factor: str,
+    ) -> str:
         html_page = f"""
 <!DOCTYPE html>
 <html>
@@ -104,6 +148,11 @@ class Dashboard():
                 "lengthMenu": [5, 10, 20, 50, 100],
                 "order": []
             }});
+            $('#tableBusFactorSummary').DataTable({{
+                "pageLength": 20,
+                "lengthMenu": [5, 10, 20, 50, 100],
+                "order": []
+            }});
             $('#tableBusFactor').DataTable({{
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
@@ -132,7 +181,7 @@ class Dashboard():
             top: 0;
             left: 0;
             right: 0;
-            width: auto; 
+            width: auto;
             z-index: 1000;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }}
@@ -215,7 +264,6 @@ class Dashboard():
             <a href="https://github.com/DennisTurco/GitRepoStats" target="_blank">GitHub Repo</a>
             <a href="https://github.com/DennisTurco/GitRepoStats#readme" target="_blank">Documentation</a>
             <a href="https://www.paypal.com/donate/?hosted_button_id=M7CJXS929334U" target="_blank" class="donate-btn">💖 Donate</a>
-            
         </div>
     </div>
     <h1 style="display: flex; align-items: center; gap: 10px;">
@@ -321,7 +369,7 @@ class Dashboard():
         {data_table_code_duplication}
 
 
-        <h2>Code ownership by file</h2>
+        <h2>Code ownership</h2>
 
         <details class="chart-info">
             <summary>ℹ️ About this report</summary>
@@ -348,6 +396,12 @@ class Dashboard():
                 </p>
             </aside>
         </details>
+
+        <h3>Code Ownership Summary</h3>
+
+        {data_table_bus_factor_summary}
+
+        <h3>Code Ownership By File</h3>
 
         {data_table_bus_factor}
 

@@ -4,11 +4,13 @@ from dataclasses import dataclass, field
 from git import Optional
 from simhash import Simhash
 
+
 @dataclass
-class LizardLocation():
+class LizardLocation:
     function: str
     lines: str
     file: str
+
 
 class Status(Enum):
     HEALTHY = 1
@@ -16,21 +18,18 @@ class Status(Enum):
     AT_RISK = 3
 
     def to_emoji(self) -> str:
-        return {
-            Status.HEALTHY: "✅",
-            Status.NEEDS_ATTENTION: "⚠️",
-            Status.AT_RISK: "❌"
-        }[self]
+        return {Status.HEALTHY: "✅", Status.NEEDS_ATTENTION: "⚠️", Status.AT_RISK: "❌"}[self]
+
 
 @dataclass
-class LizardData():
-    nloc: int # Number of Lines of Code
-    ccn: int # Cyclomatic Complexity Number.(complex if > 10)
-    token: int # code size metric
-    param: int # params number
-    length: int # function row length (similar to nloc but including declarations, exc...)
+class LizardData:
+    nloc: int  # Number of Lines of Code
+    ccn: int  # Cyclomatic Complexity Number.(complex if > 10)
+    token: int  # code size metric
+    param: int  # params number
+    length: int  # function row length (similar to nloc but including declarations, exc...)
     code: str
-    location: LizardLocation # location function
+    location: LizardLocation  # location function
     status: Status = field(init=False)
     hash_value: Optional[int] = field(init=False, repr=False)
 
@@ -44,7 +43,6 @@ class LizardData():
 
         self.hash_value = int(Simhash(self.code.split()).value)
 
-
     # to obtain a propotional score based on data importance
     def similarity_score(self, other: "LizardData") -> float:
         diff_nloc = abs(self.nloc - other.nloc)
@@ -55,11 +53,11 @@ class LizardData():
 
         # this because token and lenght are more important than param for this check
         numeric_score = (
-            0.3 * diff_nloc +
-            0.3 * diff_token +
-            0.2 * diff_ccn +
-            0.1 * diff_param +
-            0.1 * diff_length
+            0.3 * diff_nloc
+            + 0.3 * diff_token
+            + 0.2 * diff_ccn
+            + 0.1 * diff_param
+            + 0.1 * diff_length
         )
 
         text_similarity = difflib.SequenceMatcher(None, self.code, other.code).ratio()

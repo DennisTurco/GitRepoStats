@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from entities.period_filter import PeriodFilter
 
+
 @dataclass
-class Data():
+class Data:
     repo_name: str
     period: PeriodFilter
     chart_authors_html: str
@@ -16,4 +17,5 @@ class Data():
     csv_branches_stats: list[str]
     csv_code_complexity: list[str]
     csv_code_duplication: list[str]
+    csv_bus_factor_summary: list[str]
     csv_bus_factor: list[str]

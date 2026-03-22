@@ -1,17 +1,17 @@
 from dataclasses import dataclass
 from entities.author import Author
+from datetime import datetime
 
 @dataclass
-class FileStats():
-
+class FileStats:
     name: str
     changes: int
-    last_update: str
+    last_update: datetime
     last_author: Author
     file_language: str
 
     def to_csv(self) -> str:
-        return f"{self.name},{self.changes},{self.last_update},{self.last_author.main_username},{self.file_language}"
+        return f"{self.name},{self.changes},{str(self.last_update)},{self.last_author.main_username},{self.file_language}"
 
     @staticmethod
     def csv_header() -> str:

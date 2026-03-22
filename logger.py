@@ -6,6 +6,7 @@ import os
 
 FILE_PATH = "./logs.log"
 
+
 class Logger:
     class LogType(Enum):
         INFO = "INFO"
@@ -33,7 +34,12 @@ class Logger:
         raise KeyError(f"Key '{key}' not found in Logger.LogType")
 
     @staticmethod
-    def write_log(message: str, log_type: Optional["Logger.LogType"] = None, log_box=None, exception: Optional[Exception] = None):
+    def write_log(
+        message: str,
+        log_type: Optional["Logger.LogType"] = None,
+        log_box=None,
+        exception: Optional[Exception] = None,
+    ):
 
         if log_type is None:
             log_type = Logger.LogType.INFO
@@ -74,7 +80,7 @@ class Logger:
             existing_content = []
 
         if len(existing_content) >= Logger.MAX_LINES:
-            existing_content = existing_content[-Logger.LINES_TO_KEEP_AFTER_FILE_CLEAR:]
+            existing_content = existing_content[-Logger.LINES_TO_KEEP_AFTER_FILE_CLEAR :]
 
         with open(FILE_PATH, "w", encoding="utf-8") as file:
             file.write(new_log_entry)

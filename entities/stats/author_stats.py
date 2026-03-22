@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from entities.author import Author
 from entities.count_per_extension import CountPerExtension
 
+
 @dataclass
-class AuthorStats():
+class AuthorStats:
     author: Author
     commits: int
     insertions: CountPerExtension
@@ -18,7 +19,13 @@ class AuthorStats():
         return f"{self.author.main_username},{self.commits},{self.insertions.total},{self.deletions.total},{self.lines.total},{self.files.total}"
 
     def has_stats(self) -> bool:
-        return self.commits != 0 or self.insertions.total != 0 or self.deletions.total != 0 or self.lines.total != 0 or self.files.total != 0
+        return (
+            self.commits != 0
+            or self.insertions.total != 0
+            or self.deletions.total != 0
+            or self.lines.total != 0
+            or self.files.total != 0
+        )
 
     @staticmethod
     def csv_header() -> str:

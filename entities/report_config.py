@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
+
 @dataclass
-class ReportConfig():
+class ReportConfig:
     authors: bool
     commits: bool
     branches: bool

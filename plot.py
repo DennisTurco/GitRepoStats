@@ -8,6 +8,7 @@ from entities.stats.branch_stats import BranchStats
 from entities.stats.commit_stats import CommitStats
 from entities.stats.file_stats import FileStats
 
+
 class Plot:
     def __init__(self):
         pass
@@ -68,12 +69,15 @@ class Plot:
         # ──────────────────────
         # GLOBAL EXTENSIONS (ONCE)
         # ──────────────────────
-        extensions = sorted({
-            ext
-            for s in self.author_stats
-            for metric in METRICS
-            for ext in getattr(s, metric).per_extension.keys()
-        }, reverse=False)
+        extensions = sorted(
+            {
+                ext
+                for s in self.author_stats
+                for metric in METRICS
+                for ext in getattr(s, metric).per_extension.keys()
+            },
+            reverse=False,
+        )
 
         # ──────────────────────
         # COMMITS
@@ -116,10 +120,7 @@ class Plot:
                 fig.add_trace(
                     go.Bar(
                         x=authors,
-                        y=[
-                            getattr(s, attr).per_extension.get(ext, 0)
-                            for s in stats
-                        ],
+                        y=[getattr(s, attr).per_extension.get(ext, 0) for s in stats],
                         name=ext,
                         legendgroup=ext,
                         showlegend=(row == 1 and col == 2),
@@ -150,23 +151,25 @@ class Plot:
 
         return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
-
-
     def get_files_html(self):
         fig = make_subplots(rows=1, cols=1, subplot_titles=("Changes Count", "Files"))
 
         FileStats.sort_by_changes(self.file_stats)
-        dataframe_files = pd.DataFrame({
-            "Files": [s.name for s in self.file_stats],
-            "Changes": [s.changes for s in self.file_stats]
-        })
-        fig.add_trace(go.Bar(x=dataframe_files["Files"], y=dataframe_files["Changes"], name="Changes"), row=1, col=1)
+        dataframe_files = pd.DataFrame(
+            {
+                "Files": [s.name for s in self.file_stats],
+                "Changes": [s.changes for s in self.file_stats],
+            }
+        )
+        fig.add_trace(
+            go.Bar(x=dataframe_files["Files"], y=dataframe_files["Changes"], name="Changes"),
+            row=1,
+            col=1,
+        )
         return fig.to_html(full_html=False, include_plotlyjs=False)
 
     def get_languages_chart(self):
-        df_lang = pd.DataFrame({
-            "Language": [s.file_language for s in self.file_stats]
-        })
+        df_lang = pd.DataFrame({"Language": [s.file_language for s in self.file_stats]})
 
         lang_counts = (
             df_lang.value_counts()
@@ -176,27 +179,21 @@ class Plot:
         )
 
         fig = go.Figure(
-            data=[go.Pie(
-                labels=lang_counts["Language"],
-                values=lang_counts["Count"],
-                hole=0.3
-            )]
+            data=[go.Pie(labels=lang_counts["Language"], values=lang_counts["Count"], hole=0.3)]
         )
         fig.update_layout(title="Top 20 Languages")
         return fig.to_html(full_html=False, include_plotlyjs=False)
 
     def get_commits_html(self):
-        df = pd.DataFrame({
-            "Author": [s.author.main_username for s in self.commit_stats],
-            "Date": [pd.to_datetime(s.date) for s in self.commit_stats],  # parsing date
-            "Commit": [s.name for s in self.commit_stats]
-        })
-
-        commits_per_day = (
-            df.groupby(["Author", "Date"])
-            .size()
-            .reset_index(name="CommitCount")
+        df = pd.DataFrame(
+            {
+                "Author": [s.author.main_username for s in self.commit_stats],
+                "Date": [pd.to_datetime(s.date) for s in self.commit_stats],  # parsing date
+                "Commit": [s.name for s in self.commit_stats],
+            }
         )
+
+        commits_per_day = df.groupby(["Author", "Date"]).size().reset_index(name="CommitCount")
 
         commits_per_day = commits_per_day.sort_values(by="Date")
 
@@ -204,12 +201,7 @@ class Plot:
 
         for author, data in commits_per_day.groupby("Author"):
             fig.add_trace(
-                go.Scatter(
-                    x=data["Date"],
-                    y=data["CommitCount"],
-                    mode="lines+markers",
-                    name=author
-                )
+                go.Scatter(x=data["Date"], y=data["CommitCount"], mode="lines+markers", name=author)
             )
 
         fig.update_layout(
@@ -220,24 +212,21 @@ class Plot:
             autosize=True,
             width=None,
             height=600,
-            margin=dict(l=50, r=50, t=80, b=50)
+            margin=dict(l=50, r=50, t=80, b=50),
         )
 
         return fig.to_html(full_html=False, include_plotlyjs=False)
 
-
     def get_commits_cumulative_html(self):
-        df = pd.DataFrame({
-            "Author": [s.author.main_username for s in self.commit_stats],
-            "Date": [pd.to_datetime(s.date) for s in self.commit_stats],
-            "Commit": [s.name for s in self.commit_stats]
-        })
-
-        commits_per_day = (
-            df.groupby(["Author", "Date"])
-            .size()
-            .reset_index(name="CommitCount")
+        df = pd.DataFrame(
+            {
+                "Author": [s.author.main_username for s in self.commit_stats],
+                "Date": [pd.to_datetime(s.date) for s in self.commit_stats],
+                "Commit": [s.name for s in self.commit_stats],
+            }
         )
+
+        commits_per_day = df.groupby(["Author", "Date"]).size().reset_index(name="CommitCount")
 
         commits_per_day = commits_per_day.sort_values(by="Date")
 
@@ -249,10 +238,7 @@ class Plot:
 
             fig.add_trace(
                 go.Scatter(
-                    x=data["Date"],
-                    y=data["CumulativeCommits"],
-                    mode="lines+markers",
-                    name=author
+                    x=data["Date"], y=data["CumulativeCommits"], mode="lines+markers", name=author
                 )
             )
 
@@ -263,7 +249,7 @@ class Plot:
                 y=total_data.values,
                 mode="lines",
                 name="Total Commits",
-                line=dict(color="black", dash="dot")
+                line=dict(color="black", dash="dot"),
             )
         )
 
@@ -275,24 +261,21 @@ class Plot:
             autosize=True,
             width=None,
             height=600,
-            margin=dict(l=50, r=50, t=80, b=50)
+            margin=dict(l=50, r=50, t=80, b=50),
         )
 
         return fig.to_html(full_html=False, include_plotlyjs=False)
 
-
     def get_branches_html(self):
-        df = pd.DataFrame({
-            "Author": [s.author.main_username for s in self.branch_stats],
-            "Date": [pd.to_datetime(s.date) for s in self.branch_stats],  # parsing date
-            "Branch": [s.name for s in self.branch_stats]
-        })
-
-        branches_per_day = (
-            df.groupby(["Author", "Date"])
-            .size()
-            .reset_index(name="BranchCount")
+        df = pd.DataFrame(
+            {
+                "Author": [s.author.main_username for s in self.branch_stats],
+                "Date": [pd.to_datetime(s.date) for s in self.branch_stats],  # parsing date
+                "Branch": [s.name for s in self.branch_stats],
+            }
         )
+
+        branches_per_day = df.groupby(["Author", "Date"]).size().reset_index(name="BranchCount")
 
         branches_per_day = branches_per_day.sort_values(by="Date")
 
@@ -300,12 +283,7 @@ class Plot:
 
         for author, data in branches_per_day.groupby("Author"):
             fig.add_trace(
-                go.Scatter(
-                    x=data["Date"],
-                    y=data["BranchCount"],
-                    mode="lines+markers",
-                    name=author
-                )
+                go.Scatter(x=data["Date"], y=data["BranchCount"], mode="lines+markers", name=author)
             )
 
         fig.update_layout(
@@ -316,24 +294,21 @@ class Plot:
             autosize=True,
             width=None,
             height=600,
-            margin=dict(l=50, r=50, t=80, b=50)
+            margin=dict(l=50, r=50, t=80, b=50),
         )
 
         return fig.to_html(full_html=False, include_plotlyjs=False)
 
-
     def get_branches_cumulative_html(self):
-        df = pd.DataFrame({
-            "Author": [s.author.main_username for s in self.branch_stats],
-            "Date": [pd.to_datetime(s.date) for s in self.branch_stats],
-            "Branch": [s.name for s in self.branch_stats]
-        })
-
-        branches_per_day = (
-            df.groupby(["Author", "Date"])
-            .size()
-            .reset_index(name="BranchCount")
+        df = pd.DataFrame(
+            {
+                "Author": [s.author.main_username for s in self.branch_stats],
+                "Date": [pd.to_datetime(s.date) for s in self.branch_stats],
+                "Branch": [s.name for s in self.branch_stats],
+            }
         )
+
+        branches_per_day = df.groupby(["Author", "Date"]).size().reset_index(name="BranchCount")
 
         branches_per_day = branches_per_day.sort_values(by="Date")
 
@@ -345,10 +320,7 @@ class Plot:
 
             fig.add_trace(
                 go.Scatter(
-                    x=data["Date"],
-                    y=data["CumulativeBranches"],
-                    mode="lines+markers",
-                    name=author
+                    x=data["Date"], y=data["CumulativeBranches"], mode="lines+markers", name=author
                 )
             )
 
@@ -359,7 +331,7 @@ class Plot:
                 y=total_data.values,
                 mode="lines",
                 name="Total Branches",
-                line=dict(color="black", dash="dot")
+                line=dict(color="black", dash="dot"),
             )
         )
 
@@ -371,8 +343,7 @@ class Plot:
             autosize=True,
             width=None,
             height=600,
-            margin=dict(l=50, r=50, t=80, b=50)
+            margin=dict(l=50, r=50, t=80, b=50),
         )
 
         return fig.to_html(full_html=False, include_plotlyjs=False)
-

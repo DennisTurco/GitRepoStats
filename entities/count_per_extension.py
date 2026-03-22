@@ -1,6 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+
 @dataclass
 class CountPerExtension:
     total: int = 0

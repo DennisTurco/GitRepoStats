@@ -1,7 +1,7 @@
 from entities.author import Author
 
-class BranchStats():
 
+class BranchStats:
     def __init__(self, name: str, author: Author, commits: int, date: str):
         self.name = name
         self.author = author
