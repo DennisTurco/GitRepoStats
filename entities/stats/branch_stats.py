@@ -1,18 +1,20 @@
+from datetime import datetime
+
 from entities.author import Author
 
 
 class BranchStats:
-    def __init__(self, name: str, author: Author, commits: int, date: str):
+    def __init__(self, name: str, author: Author, commits: int, date: datetime):
         self.name = name
         self.author = author
         self.commits = commits
-        self.date = date.strftime("%Y-%m")
+        self.date = date
 
     def __str__(self) -> str:
-        return f"name: {self.name}, author: {self.author.main_username}, commits: {self.commits}, date: {self.date}"
+        return f"name: {self.name}, author: {self.author.main_username}, commits: {self.commits}, date: {self.date.strftime('%Y-%m')}"
 
     def to_csv(self) -> str:
-        return f"{self.name},{self.author.main_username},{self.date}"
+        return f"{self.name},{self.author.main_username},{self.date.strftime('%Y-%m')}"
 
     @staticmethod
     def csv_header() -> str:

@@ -1,22 +1,23 @@
 import os
-from git import Optional, Repo
+
+import lizard
+from git import Repo
+
 from dashboard import Dashboard
+from entities.author import Author
 from entities.bus_factor_data import BusFactorData, FileOwner
 from entities.count_per_extension import CountPerExtension
+from entities.data import Data
 from entities.duplication_data import DuplicationData
+from entities.lizard_data import LizardData, LizardLocation
+from entities.period_filter import PeriodFilter
+from entities.report_config import ReportConfig
+from entities.stats.author_stats import AuthorStats
+from entities.stats.branch_stats import BranchStats
+from entities.stats.commit_stats import CommitStats
+from entities.stats.file_stats import FileStats
 from logger import Logger
 from plot import Plot
-import lizard
-
-from entities.data import Data
-from entities.author import Author
-from entities.lizard_data import LizardData, LizardLocation
-from entities.report_config import ReportConfig
-from entities.stats.commit_stats import CommitStats
-from entities.stats.author_stats import AuthorStats
-from entities.stats.file_stats import FileStats
-from entities.stats.branch_stats import BranchStats
-from entities.period_filter import PeriodFilter
 from preference_reader import PreferenceReader
 
 
@@ -25,7 +26,7 @@ class RepoManagement:
         self.repo_path = repo_path
         try:
             self._repo_obj = Repo(repo_path)
-        except:
+        except Exception:
             raise Exception("The project path provided is not a GitHub repository")
         self.log_box = log_box
         self.period = period
@@ -120,7 +121,7 @@ class RepoManagement:
 
     def __get_function_code(self, filename: str, start_line: int, end_line: int) -> str:
         try:
-            with open(filename, "r", encoding="utf-8") as f:
+            with open(filename, encoding="utf-8") as f:
                 lines = f.readlines()
                 return "".join(lines[start_line - 1 : end_line]).strip()
         except Exception as e:
@@ -259,6 +260,8 @@ class RepoManagement:
 
         # from commits
         for commit in self._repo_obj.iter_commits():  # No filters!
+            if not commit.author.email or not commit.author.name:
+                continue
             email = commit.author.email.lower()
             name = commit.author.name.strip()
             new_author = Author(email, name)
@@ -283,7 +286,7 @@ class RepoManagement:
         for ref in self._repo_obj.refs:
             if ref.name.startswith("origin/") or ref in self._repo_obj.branches:
                 commit = ref.commit
-                if commit:
+                if commit and commit.author.email and commit.author.name:
                     email = commit.author.email.lower()
                     name = commit.author.name.strip()
                     new_author = Author(email, name)
@@ -340,6 +343,8 @@ class RepoManagement:
         }
 
         for commit in self.__iter_filtered_commits():
+            if not commit.author.email:
+                continue
             author = self.__find_author(commit.author.email, authors)
             if not author:
                 continue
@@ -348,7 +353,7 @@ class RepoManagement:
             a_stats.commits += 1
 
             for file, file_stats in commit.stats.files.items():
-                ext = self.__get_extension_from_file(file)
+                ext = self.__get_extension_from_file(str(file))
                 ext = ext.lower().strip()
 
                 if self.__skip_author_stat_from_analysis(ext) or ext == "":
@@ -388,16 +393,18 @@ class RepoManagement:
         file_stats_map: dict[str, FileStats] = {}
 
         for commit in self.__iter_filtered_commits():
+            if not commit.author.email:
+                continue
             author = self.__find_author(commit.author.email, authors)
             if not author:
                 continue
 
             for file_name in commit.stats.files.keys():
                 if file_name not in file_stats_map:
-                    file_extension = self.__get_extension_from_file(file_name) or "Other"
-                    file_stats_map[file_name] = FileStats(file_name, 0, None, None, file_extension)
+                    file_extension = self.__get_extension_from_file(str(file_name)) or "Other"
+                    file_stats_map[str(file_name)] = FileStats(str(file_name), 0, None, None, file_extension)
 
-                f_stats = file_stats_map[file_name]
+                f_stats = file_stats_map[str(file_name)]
                 f_stats.changes += 1
                 if f_stats.last_update is None or commit.committed_datetime > f_stats.last_update:
                     f_stats.last_update = commit.committed_datetime
@@ -411,10 +418,12 @@ class RepoManagement:
         commits_stats = []
         for commit in self.__iter_filtered_commits():
             Logger.write_log(f"Getting commit stats for {commit.hexsha}", log_box=self.log_box)
+            if not commit.author.email:
+                continue
             author = self.__find_author(commit.author.email, authors)
             commits_stats.append(
                 CommitStats(
-                    commit, author, len(commit.stats.files.keys()), commit.committed_datetime
+                    str(commit), author, len(commit.stats.files.keys()), commit.committed_datetime
                 )
             )
 
@@ -449,14 +458,17 @@ class RepoManagement:
                 )
                 commit_count = 0
 
-            author_obj = self.__find_author(commit.author.email if commit else "", authors)
+            author_obj = self.__find_author(commit.author.email if commit and commit.author.email else "", authors)
+
+            if not commit or not commit.committed_datetime:
+                continue
 
             branches_stats.append(
                 BranchStats(
                     branch.name,
                     author_obj,
                     commit_count,
-                    commit.committed_datetime if commit else None,
+                    commit.committed_datetime,
                 )
             )
 
@@ -480,21 +492,25 @@ class RepoManagement:
 
     def __plot_all_stats(
         self,
-        all_stats: Optional[list[AuthorStats]],
-        file_stats: Optional[list[FileStats]],
-        commits_stats: Optional[list[CommitStats]],
-        branches_stats: Optional[list[BranchStats]],
-        code_complexity: Optional[list[LizardData]],
-        code_duplication: Optional[list[DuplicationData]],
-        bus_factor: Optional[list[BusFactorData]],
+        all_stats: list[AuthorStats] | None,
+        file_stats: list[FileStats] | None,
+        commits_stats: list[CommitStats] | None,
+        branches_stats: list[BranchStats] | None,
+        code_complexity: list[LizardData] | None,
+        code_duplication: list[DuplicationData] | None,
+        bus_factor: list[BusFactorData] | None,
     ) -> None:
         Logger.write_log("Preparing data for plotting", log_box=self.log_box)
 
         plot = Plot()
-        if all_stats is not None: plot.init_dataframe_authors(all_stats)
-        if file_stats is not None: plot.init_dataframe_files(file_stats)
-        if commits_stats is not None: plot.init_dataframe_commits(commits_stats)
-        if branches_stats is not None: plot.init_dataframe_branches(branches_stats)
+        if all_stats is not None:
+            plot.init_dataframe_authors(all_stats)
+        if file_stats is not None:
+            plot.init_dataframe_files(file_stats)
+        if commits_stats is not None:
+            plot.init_dataframe_commits(commits_stats)
+        if branches_stats is not None:
+            plot.init_dataframe_branches(branches_stats)
 
         authors_html = plot.get_authors_html() if self.report_config.authors else ""
         files_html = plot.get_files_html() if self.report_config.files else ""

@@ -25,7 +25,7 @@ With Git Repo Stats, you can:
 | ![image1](./docs/imgs/screenshot1.png) | ![image2](./docs/imgs/screenshot2.png) |
 | ------------------------ | ------------------------ |
 | ![image3](./docs/imgs/screenshot3.png) | ![image4](./docs/imgs/screenshot4.png) |
-| ![image5](./docs/imgs/screenshot5.png) |  |
+| ![image5](./docs/imgs/screenshot5.png) | _ |
 
 ### Example Output
 
@@ -47,17 +47,16 @@ This file defines how the tool performs code ownership, duplication, and complex
 You can customize thresholds, excluded files, and other rules according to your project’s needs.
 
 <aside>
-Notes:
+    Notes:
 
-- All thresholds can be tuned to make the analysis more or less strict.
-- Lists (like ExcludeExtensions) can contain one or more entries.
-- Missing fields will be replaced with default values automatically.
-- The YAML file is read at runtime, you can modify it without recompiling or restarting the app.
-
+    - All thresholds can be tuned to make the analysis more or less strict.
+    - Lists (like ExcludeExtensions) can contain one or more entries.
+    - Missing fields will be replaced with default values automatically.
+    - The YAML file is read at runtime, you can modify it without recompiling or restarting the app.
 </aside>
 
 <aside>
-Note: *The larger the project (and the fewer filters you apply), the longer the analysis will take.*
+    Note: *The larger the project (and the fewer filters you apply), the longer the analysis will take.*
 </aside>
 
 ## 🐛 Report a BUG

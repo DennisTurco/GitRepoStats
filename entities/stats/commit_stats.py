@@ -1,18 +1,20 @@
-from entities.author import Author
 from datetime import datetime
 
+from entities.author import Author
+
+
 class CommitStats:
-    def __init__(self, name: str, author: Author, files_edited: int, date: str):
+    def __init__(self, name: str, author: Author, files_edited: int, date: datetime):
         self.name: str = name
         self.author: Author = author
         self.files_edited: int = files_edited
-        self.date: datetime = date.strftime("%Y-%m")
+        self.date: datetime = date
 
     def __str__(self) -> str:
-        return f"Commit: {self.name}, Author: {self.author.main_username}, FilesEdited: {self.files_edited}, Date: {self.date}"
+        return f"Commit: {self.name}, Author: {self.author.main_username}, FilesEdited: {self.files_edited}, Date: {self.date.strftime('%Y-%m')}"
 
     def to_csv(self) -> str:
-        return f"{self.name},{self.author.main_username},{self.files_edited},{self.date}"
+        return f"{self.name},{self.author.main_username},{self.files_edited},{self.date.strftime('%Y-%m')}"
 
     @staticmethod
     def csv_header() -> str:

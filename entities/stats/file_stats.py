@@ -1,6 +1,8 @@
 from dataclasses import dataclass
-from entities.author import Author
 from datetime import datetime
+
+from entities.author import Author
+
 
 @dataclass
 class FileStats:

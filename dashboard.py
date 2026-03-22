@@ -357,7 +357,8 @@ class Dashboard:
             <summary>ℹ️ Data description</summary>
             <aside>
                 <p>
-                    This section shows detected duplicated code blocks in the repository, helping identify redundancy and maintainability issues.
+                    This section shows detected duplicated code blocks in the repository,
+                    helping identify redundancy and maintainability issues.
                 </p>
 
                 <h4>How to read it</h4>

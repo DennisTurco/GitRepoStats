@@ -1,8 +1,9 @@
-from collections import defaultdict
 import difflib
-from enum import Enum
+from collections import defaultdict
 from dataclasses import dataclass, field
-from git import Optional
+from enum import Enum
+from typing import cast
+
 from simhash import Simhash
 
 
@@ -42,18 +43,20 @@ class LizardData:
     code: str
     location: LizardLocation  # location function
     status: Status = field(init=False)
-    hash_value: Optional[int] = field(init=False, repr=False)
+    hash_value: int = field(init=False, repr=False)
 
 
     def __post_init__(self):
-        if self.nloc <= nloc_healthy_limit and self.ccn <= ccn_healthy_limit and self.token <= token_healthy_limit and self.param <= param_healthy_limit:
+        if (self.nloc <= nloc_healthy_limit and self.ccn <= ccn_healthy_limit
+            and self.token <= token_healthy_limit and self.param <= param_healthy_limit):
             self.status = Status.HEALTHY
-        elif self.nloc <= nloc_warning_limit and self.ccn <= ccn_warning_limit and self.token <= token_warning_limit and self.param <= param_warning_limit:
+        elif (self.nloc <= nloc_warning_limit and self.ccn <= ccn_warning_limit
+            and self.token <= token_warning_limit and self.param <= param_warning_limit):
             self.status = Status.NEEDS_ATTENTION
         else:
             self.status = Status.AT_RISK
 
-        self.hash_value = int(Simhash(self.code.split()).value)
+        self.hash_value = int(cast(int, Simhash(self.code.split()).value))
 
     # to obtain a propotional score based on data importance
     def similarity_score(self, other: "LizardData") -> float:
@@ -79,7 +82,8 @@ class LizardData:
         return score
 
     def to_csv(self) -> str:
-        return f"{self.status.to_emoji()}|{self.nloc}|{self.ccn}|{self.token}|{self.param}|{self.length}|{self.location.function}|{self.location.lines}|{self.location.file}"
+        return f"""{self.status.to_emoji()}|{self.nloc}|{self.ccn}|{self.token}|{self.param}|
+            {self.length}|{self.location.function}|{self.location.lines}|{self.location.file}"""
 
     @staticmethod
     def csv_header_summary() -> str:
@@ -137,6 +141,8 @@ class LizardData:
 
     @staticmethod
     def __get_status_by_values(value: int, healthy_limit: int, warning_limit: int):
-        if value <= healthy_limit: return Status.HEALTHY
-        if value <= warning_limit: return Status.NEEDS_ATTENTION
+        if value <= healthy_limit:
+            return Status.HEALTHY
+        if value <= warning_limit:
+            return Status.NEEDS_ATTENTION
         return Status.AT_RISK
