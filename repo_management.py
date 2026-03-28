@@ -1,4 +1,6 @@
 import os
+from collections import defaultdict
+from datetime import datetime
 
 import lizard
 from git import Repo
@@ -6,6 +8,7 @@ from git import Repo
 from dashboard import Dashboard
 from entities.author import Author
 from entities.bus_factor_data import BusFactorData, FileOwner
+from entities.complexity_trend import CommitComplexityData, ComplexityTrendData
 from entities.count_per_extension import CountPerExtension
 from entities.data import Data
 from entities.duplication_data import DuplicationData
@@ -26,8 +29,8 @@ class RepoManagement:
         self.repo_path = repo_path
         try:
             self._repo_obj = Repo(repo_path)
-        except Exception:
-            raise Exception("The project path provided is not a GitHub repository")
+        except Exception as e:
+            raise Exception("The project path provided is not a GitHub repository") from e
         self.log_box = log_box
         self.period = period
         self.report_config = report_config
@@ -36,7 +39,7 @@ class RepoManagement:
 
     def __get_repo_name_from_path(self, repo_path) -> str:
         pos = 0
-        for i in range(len(repo_path) - 1, 0, -1):
+        for i in range(len(repo_path) - 1, -1, -1):
             if repo_path[i] != "\\":
                 pos += 1
             else:
@@ -49,10 +52,16 @@ class RepoManagement:
         file_stats = None
         commits_stats = None
         branches_stats = None
+        complexity_trend = None
         authors = self.__get_authors()  # to obtain only the unique author without duplications
         code_complexity = (
             self.__analyze_code_complexity_with_lizard()
             if self.report_config.code_complexity
+            else []
+        )
+        complexity_trend = (
+            self.__analyze_complexity_trend(code_complexity)
+            if self.report_config.code_complexity and code_complexity
             else []
         )
         code_duplication = (
@@ -80,13 +89,23 @@ class RepoManagement:
             code_complexity,
             code_duplication,
             bus_factor,
+            complexity_trend,
         )
 
     def __analyze_code_complexity_with_lizard(self) -> list[LizardData]:
         Logger.write_log(
             f"Calculating code complexity for {self.repo_path}...", log_box=self.log_box
         )
-        results = lizard.analyze([self.repo_path])
+        try:
+            results = lizard.analyze([self.repo_path])
+        except Exception as e:
+            Logger.write_log(
+                f"Error analyzing code complexity: {e}",
+                log_box=self.log_box,
+                log_type=Logger.LogType.WARN,
+            )
+            return []
+
         all_functions: list[LizardData] = []
 
         for file_info in results:
@@ -132,6 +151,145 @@ class RepoManagement:
             )
             return ""
 
+    def __analyze_complexity_trend(self, code_complexity: list[LizardData] | None) -> list[ComplexityTrendData]:
+        """Analyzes cyclomatic complexity evolution over time.
+
+        Strategy: Uses current complexity data and maps each function to when its file was last modified.
+        This gives us the evolution of complexity across the repository's history.
+        """
+        Logger.write_log("Analyzing complexity trend from file modification history...", log_box=self.log_box)
+
+        try:
+            if not code_complexity:
+                Logger.write_log("No complexity data available for trend analysis", log_box=self.log_box)
+                return []
+
+            # Map each function to its last commit date
+            commit_complexity_data: list[CommitComplexityData] = []
+            processed_files = 0
+
+            for complexity_data in code_complexity:
+                file_path = complexity_data.location.file
+
+                try:
+                    # Get the last commit date for this file
+                    rel_path = os.path.relpath(file_path, self._repo_obj.working_tree_dir).replace("\\", "/")
+                    last_commit = None
+
+                    for commit in self._repo_obj.iter_commits(all=True, paths=[rel_path]):
+                        last_commit = commit
+                        break  # First (most recent) commit
+
+                    if not last_commit:
+                        # File not in history (maybe new), use current date
+                        last_commit_date = datetime.now()
+                        last_commit_hash = "HEAD"
+                    else:
+                        last_commit_date = last_commit.committed_datetime.replace(tzinfo=None)
+                        last_commit_hash = last_commit.hexsha
+
+                    commit_complexity_data.append(
+                        CommitComplexityData(
+                            commit_hash=last_commit_hash,
+                            commit_date=last_commit_date,
+                            file_path=file_path,
+                            function_name=complexity_data.location.function,
+                            ccn=complexity_data.ccn,
+                            nloc=complexity_data.nloc,
+                            token=complexity_data.token,
+                            param=complexity_data.param,
+                            length=complexity_data.length,
+                        )
+                    )
+                    processed_files += 1
+                    if processed_files % 50 == 0:
+                        Logger.write_log(
+                            f"Processed {processed_files} files... Data points: {len(commit_complexity_data)}",
+                            log_box=self.log_box,
+                        )
+                except Exception as e:
+                    Logger.write_log(
+                        f"Error getting history for {file_path}: {e}",
+                        log_box=self.log_box,
+                        log_type=Logger.LogType.WARN,
+                    )
+                    continue
+
+            Logger.write_log(
+                f"Complexity trend analysis complete: {len(commit_complexity_data)} data points from {len(code_complexity)} functions",
+                log_box=self.log_box,
+            )
+
+            if not commit_complexity_data:
+                return []
+
+            # Aggregate data by period
+            return self.__aggregate_complexity_trend(commit_complexity_data)
+
+        except Exception as e:
+            Logger.write_log(
+                f"Error analyzing complexity trend: {e}",
+                log_box=self.log_box,
+                log_type=Logger.LogType.WARN,
+            )
+            return []
+
+    def __aggregate_complexity_trend(
+        self, commit_data: list[CommitComplexityData], granularity: str = "month"
+    ) -> list[ComplexityTrendData]:
+        """Aggregates commit-level complexity data into periods (month/week/day)"""
+        if not commit_data:
+            return []
+
+        # Group by period
+        period_map: dict[str, list[CommitComplexityData]] = defaultdict(list)
+
+        for data in commit_data:
+            if granularity == "month":
+                period = data.commit_date.strftime("%Y-%m")
+            elif granularity == "week":
+                period = data.commit_date.strftime("%Y-W%U")
+            elif granularity == "quarter":
+                quarter = (data.commit_date.month - 1) // 3 + 1
+                period = f"{data.commit_date.year}-Q{quarter}"
+            else:  # day
+                period = data.commit_date.strftime("%Y-%m-%d")
+            
+            period_map[period].append(data)
+        
+        # Calculate aggregates
+        trends: list[ComplexityTrendData] = []
+        for period, data_list in sorted(period_map.items()):
+            if not data_list:
+                continue
+            
+            avg_ccn = sum(d.ccn for d in data_list) / len(data_list)
+            avg_nloc = sum(d.nloc for d in data_list) / len(data_list)
+            avg_token = sum(d.token for d in data_list) / len(data_list)
+            avg_param = sum(d.param for d in data_list) / len(data_list)
+            total_ccn = sum(d.ccn for d in data_list)
+            total_nloc = sum(d.nloc for d in data_list)
+            
+            # Use first commit date as period start
+            period_date = min(d.commit_date for d in data_list)
+            
+            trends.append(
+                ComplexityTrendData(
+                    period=period,
+                    date=period_date,
+                    avg_ccn=avg_ccn,
+                    avg_nloc=avg_nloc,
+                    avg_token=avg_token,
+                    avg_param=avg_param,
+                    function_count=len(data_list),
+                    total_ccn=total_ccn,
+                    total_nloc=total_nloc,
+                )
+            )
+        
+        ComplexityTrendData.sort_by_date(trends)
+        return trends
+
     def __find_possible_duplicates(self, stats: list[LizardData]) -> list[DuplicationData]:
         Logger.write_log("Analyzing code duplication (prehashed)...", log_box=self.log_box)
         duplicates: list[DuplicationData] = []
@@ -175,7 +333,15 @@ class RepoManagement:
         file_counts_map: list[BusFactorData] = []
 
         # All file in the current branch
-        tracked_files = self._repo_obj.git.ls_tree("-r", "--name-only", "HEAD").splitlines()
+        try:
+            tracked_files = self._repo_obj.git.ls_tree("-r", "--name-only", "HEAD").splitlines()
+        except Exception as e:
+            Logger.write_log(
+                f"Error getting tracked files from HEAD: {e}",
+                log_box=self.log_box,
+                log_type=Logger.LogType.WARN,
+            )
+            return []
 
         for rel_path in tracked_files:
             if rel_path.endswith(tuple(self.configs.CodeOwnership.ExcludeExtensions)):
@@ -282,7 +448,15 @@ class RepoManagement:
                 )
 
         # from branches
-        self._repo_obj.remotes.origin.fetch()
+        try:
+            self._repo_obj.remotes.origin.fetch()
+        except Exception as e:
+            Logger.write_log(
+                f"Error fetching from remote origin: {e}",
+                log_box=self.log_box,
+                log_type=Logger.LogType.WARN,
+            )
+        
         for ref in self._repo_obj.refs:
             if ref.name.startswith("origin/") or ref in self._repo_obj.branches:
                 commit = ref.commit
@@ -399,15 +573,16 @@ class RepoManagement:
             if not author:
                 continue
 
-            for file_name in commit.stats.files.keys():
+            for file_name in commit.stats.files:
                 if file_name not in file_stats_map:
                     file_extension = self.__get_extension_from_file(str(file_name)) or "Other"
                     file_stats_map[str(file_name)] = FileStats(str(file_name), 0, None, None, file_extension)
 
                 f_stats = file_stats_map[str(file_name)]
                 f_stats.changes += 1
-                if f_stats.last_update is None or commit.committed_datetime > f_stats.last_update:
-                    f_stats.last_update = commit.committed_datetime
+                commit_datetime = commit.committed_datetime.replace(tzinfo=None)
+                if f_stats.last_update is None or commit_datetime > f_stats.last_update:
+                    f_stats.last_update = commit_datetime
                     f_stats.last_author = author
         files_stats = [stat for stat in file_stats_map.values() if stat.changes > 0]
         return files_stats
@@ -458,10 +633,10 @@ class RepoManagement:
                 )
                 commit_count = 0
 
-            author_obj = self.__find_author(commit.author.email if commit and commit.author.email else "", authors)
-
             if not commit or not commit.committed_datetime:
                 continue
+
+            author_obj = self.__find_author(commit.author.email if commit.author.email else "", authors)
 
             branches_stats.append(
                 BranchStats(
@@ -499,6 +674,7 @@ class RepoManagement:
         code_complexity: list[LizardData] | None,
         code_duplication: list[DuplicationData] | None,
         bus_factor: list[BusFactorData] | None,
+        complexity_trend: list[ComplexityTrendData] | None = None,
     ) -> None:
         Logger.write_log("Preparing data for plotting", log_box=self.log_box)
 
@@ -511,6 +687,8 @@ class RepoManagement:
             plot.init_dataframe_commits(commits_stats)
         if branches_stats is not None:
             plot.init_dataframe_branches(branches_stats)
+        if complexity_trend is not None and len(complexity_trend) > 0:
+            plot.init_dataframe_complexity_trend(complexity_trend)
 
         authors_html = plot.get_authors_html() if self.report_config.authors else ""
         files_html = plot.get_files_html() if self.report_config.files else ""
@@ -558,6 +736,17 @@ class RepoManagement:
             if self.report_config.bus_factor and bus_factor
             else ["No data available"]
         )
+        complexity_trend_html = (
+            plot.get_complexity_trend_html() if complexity_trend and len(complexity_trend) > 0 else ""
+        )
+        complexity_trend_table_html = (
+            plot.get_complexity_trend_table_html() if complexity_trend and len(complexity_trend) > 0 else ""
+        )
+        csv_complexity_trend = (
+            ComplexityTrendData.to_csv_data_list(complexity_trend)
+            if complexity_trend
+            else ["No data available"]
+        )
 
         data_to_plot = Data(
             self.repo_name,
@@ -576,6 +765,8 @@ class RepoManagement:
             csv_code_duplication,
             csv_bus_factor_summary,
             csv_bus_factor,
+            complexity_trend_html,
+            csv_complexity_trend,
         )
 
         Logger.write_log("Generating dashboard file .html", log_box=self.log_box)
@@ -583,3 +774,5 @@ class RepoManagement:
 
         Logger.write_log(message="Opening Dashboard", log_box=self.log_box)
         Dashboard.open_result_website()
+
+

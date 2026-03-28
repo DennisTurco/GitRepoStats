@@ -14,7 +14,7 @@ class PreferenceReader:
     @staticmethod
     def read_preferences_from_yaml():
         try:
-            with open(PREFERENCE_FILE_PATH) as stream:
+            with open(PREFERENCE_FILE_PATH, encoding="utf-8") as stream:
                 config = yaml.safe_load(stream)
 
                 try:
@@ -23,7 +23,7 @@ class PreferenceReader:
                     code_duplication = config["CodeDuplication"]
                     code_complexity = config["CodeComplexity"]
                 except KeyError as e:
-                    raise KeyError(f"Missing section on file YAML: {e}")
+                    raise KeyError(f"Missing section on file YAML: {e}") from e
 
                 try:
                     author_stats_pref = AuthorStatsPreferences(author_stats["ExcludeExtensions"])

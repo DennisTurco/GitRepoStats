@@ -158,13 +158,13 @@ class GUI(ctk.CTk):
         self.__check_at_least_one_if_necessary()
         if (
             self.stats_vars["codecomplexity"].get() != self.last_code_complexity
-            and self.last_code_duplication
+            and not self.last_code_complexity
         ):
             self.stats_vars["codeduplication"].set(False)
             self.__check_at_least_one_if_necessary()
         elif (
             self.stats_vars["codeduplication"].get() != self.last_code_duplication
-            and not self.last_code_complexity
+            and not self.last_code_duplication
         ):
             self.stats_vars["codecomplexity"].set(True)
 
@@ -260,8 +260,12 @@ class GUI(ctk.CTk):
         start_index = self.log_box.index("end-2c linestart")
 
         first_space = message.find(" ")
-        second_space = message.find(" ", first_space + 1)
-        date_end_index = second_space if second_space != -1 else first_space
+        if first_space == -1:
+            date_end_index = -1
+        else:
+            second_space = message.find(" ", first_space + 1)
+            date_end_index = second_space if second_space != -1 else first_space
+
         if date_end_index != -1:
             self.log_box.tag_add(
                 "date", f"{start_index} + 0c", f"{start_index} + {date_end_index}c"

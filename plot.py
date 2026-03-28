@@ -1,8 +1,10 @@
 import hashlib
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from entities.complexity_trend import ComplexityTrendData
 from entities.stats.author_stats import AuthorStats
 from entities.stats.branch_stats import BranchStats
 from entities.stats.commit_stats import CommitStats
@@ -24,6 +26,10 @@ class Plot:
 
     def init_dataframe_branches(self, branch_stats: list[BranchStats]):
         self.branch_stats = branch_stats
+
+    def init_dataframe_complexity_trend(self, complexity_trend: list[ComplexityTrendData]):
+        self.complexity_trend = complexity_trend
+
 
     def get_authors_html(self):
         import plotly.graph_objects as go
@@ -347,3 +353,103 @@ class Plot:
         )
 
         return fig.to_html(full_html=False, include_plotlyjs=False)
+
+    def get_complexity_trend_html(self):
+        """Generates line chart showing cyclomatic complexity evolution over time"""
+        if not hasattr(self, 'complexity_trend') or not self.complexity_trend:
+            return "<p>No complexity trend data available</p>"
+
+        df = pd.DataFrame({
+            'Period': [t.period for t in self.complexity_trend],
+            'Date': [pd.to_datetime(t.date) for t in self.complexity_trend],
+            'Avg CCN': [t.avg_ccn for t in self.complexity_trend],
+            'Avg NLOC': [t.avg_nloc for t in self.complexity_trend],
+            'Avg Token': [t.avg_token for t in self.complexity_trend],
+            'Function Count': [t.function_count for t in self.complexity_trend],
+        })
+
+        if len(df) == 0:
+            return "<p>No complexity trend data available</p>"
+
+        df = df.sort_values('Date')
+
+        fig = go.Figure()
+
+        # Main line: Average CCN (Cyclomatic Complexity)
+        fig.add_trace(
+            go.Scatter(
+                x=df['Date'],
+                y=df['Avg CCN'],
+                mode='lines+markers',
+                name='Avg CCN',
+                line=dict(color='#d62728', width=3),
+                marker=dict(size=8),
+            )
+        )
+
+        # Secondary axis: Average NLOC
+        fig.add_trace(
+            go.Scatter(
+                x=df['Date'],
+                y=df['Avg NLOC'],
+                mode='lines+markers',
+                name='Avg NLOC',
+                line=dict(color='#1f77b4', width=2, dash='dash'),
+                marker=dict(size=6),
+                yaxis='y2',
+            )
+        )
+
+        # Calculate and add trend line (CCN)
+        if len(df) > 1:
+            z = np.polyfit(range(len(df)), df['Avg CCN'].values, 1)
+            p = np.poly1d(z)
+            trend_line = p(range(len(df)))
+
+            fig.add_trace(
+                go.Scatter(
+                    x=df['Date'],
+                    y=trend_line,
+                    mode='lines',
+                    name='CCN Trend',
+                    line=dict(color='rgba(214, 39, 40, 0.3)', width=2, dash='dot'),
+                )
+            )
+
+        fig.update_layout(
+            title='Cyclomatic Complexity Evolution Over Time',
+            xaxis_title='Date',
+            yaxis_title='Average Cyclomatic Complexity (CCN)',
+            yaxis2=dict(
+                title='Average Lines of Code (NLOC)',
+                overlaying='y',
+                side='right',
+            ),
+            template='plotly_white',
+            autosize=True,
+            width=None,
+            height=600,
+            margin=dict(l=50, r=80, t=80, b=50),
+            hovermode='x unified',
+            legend=dict(x=0.01, y=0.99),
+        )
+
+        return fig.to_html(full_html=False, include_plotlyjs=False)
+
+    def get_complexity_trend_table_html(self):
+        """Generates HTML table with complexity trend details"""
+        if not hasattr(self, 'complexity_trend') or not self.complexity_trend:
+            return "<p>No complexity trend data available</p>"
+
+        df = pd.DataFrame({
+            'Period': [t.period for t in self.complexity_trend],
+            'Avg CCN': [f"{t.avg_ccn:.2f}" for t in self.complexity_trend],
+            'Avg NLOC': [f"{t.avg_nloc:.2f}" for t in self.complexity_trend],
+            'Total Functions': [t.function_count for t in self.complexity_trend],
+        })
+
+        html = "<div style='overflow-x: auto;'>"
+        html += df.to_html(index=False, border=0, classes='table table-striped')
+        html += "</div>"
+
+        return html

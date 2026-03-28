@@ -1,76 +1,234 @@
 ![logo](./imgs/banner.png)
 
-## Description
+# 📊 GitRepoStats - GitHub Repository Analytics Dashboard
 
-**Git Repo Stats** is a Windows desktop application with a modern, user-friendly graphical interface that allows you to generate reports and analyze key information about the lifecycle of any GitHub project you scan.
+A comprehensive **Windows desktop application** that analyzes GitHub repositories and generates actionable insights into project health, code quality, and team productivity through an interactive HTML dashboard.
 
-With Git Repo Stats, you can:
+## 🎯 Features
 
-- **Development Team Management and Monitoring**
-  - Get an instant overview of each developer's contributions.
-- **General Project Health Overview**
-  - Track historical activity and trends over time.
-- **Productivity Analysis**
-  - Analyze contributions per author, including commits, lines added/removed, and files modified.
-- **Code Review Support for Project Managers**
-  - Identify files that may require refactoring.
-  - Monitor the most active authors in each module to assign code reviews more effectively.
-- **Code Complexity Analysis**
-  - Detect functions that are well-written or may need improvement.
-- **Code Ownership Analysis**
-  - Determine who owns the highest percentage of each file.
-- **Code Duplication Analysis**
-  - Identify duplicated or similar functions that could be refactored.
+### Development Team Management & Monitoring
+- Track each developer's contributions at a glance
+- Visualize author statistics with multi-metric support
+- Analyze commits, lines added/removed, files modified per author
+- Breakdown of contributions by language/file type
 
-| ![image1](./docs/imgs/screenshot1.png) | ![image2](./docs/imgs/screenshot2.png) |
-| ------------------------ | ------------------------ |
-| ![image3](./docs/imgs/screenshot3.png) | ![image4](./docs/imgs/screenshot4.png) |
-| ![image5](./docs/imgs/screenshot5.png) | _ |
+### Project Health Overview
+- Historical activity tracking and trends analysis
+- Period-based filtering (start/end date selection)
+- Comprehensive repository metrics and reports
 
-### Example Output
+### Code Quality Analysis
+- **Cyclomatic Complexity**: Identifies complex functions using Lizard static analyzer
+- **Status Indicators**: Functions marked as ✅ Healthy, ⚠️ Needs Attention, or ❌ At Risk
+- **Complexity Trends**: Track code quality evolution over time with configurable granularity (day, week, month, quarter)
+- **Trend Lines**: Polynomial-fit visualization showing improvement/degradation
 
-View an example report generated [📄 Redis stats example .html](./docs/redis_stats_example.html) from scanning redis repo (you can view the github project of redis from [Redis GitHub Repo](https://github.com/redis/redis))
+### Code Duplication Detection
+- SimHash-based function similarity comparison
+- Detect redundant code blocks with similarity scoring
+- Identify refactoring opportunities
 
-## Usage
+### Code Ownership Analysis (Bus Factor)
+- Determine code ownership percentage per file/author
+- Identify knowledge concentration risks
+- Assess team's exposure to key developer dependencies
+- Risk level indicators (LOW/MEDIUM/HIGH)
 
-The tool works with both public and private repositories.
-The only requirement is that you are able to clone the repository on your local machine.
+### Interactive HTML Dashboard
+- **Multi-tab navigation**: Authors, Files, Code Analysis
+- **Sortable & filterable tables**: DataTables.js integration
+- **Interactive Plotly charts**: Hover details, drill-down capabilities
+- **Stacked bar charts**: Contributions by language
+- **Trend visualization**: Line graphs with polynomial fits
+- **Auto-opens in browser**: `repo_stats.html` generated after analysis
 
-1. Clone this project: `git clone https://github.com/DennisTurco/GitRepoStats.git`
-2. Run GitRepoStats from the main file (gitrepostats.py)
-3. in "Workspace path" field, insert the absolute path of the GitHub project root you want to scan.
-4. Press the "Get stats" button to start the project analysis.
+## 🚀 Quick Start
 
-Git Repo Stats uses a **configuration file** located in: "./config/preferences.yaml"
+### Prerequisites
+- **Python 3.11+** (or compatible)
+- **Windows OS** (or compatible OS with CustomTkinter support)
+- **Git** installed and accessible from command line
 
-This file defines how the tool performs code ownership, duplication, and complexity analysis.
-You can customize thresholds, excluded files, and other rules according to your project’s needs.
+### Installation
 
-<aside>
-    Notes:
+1. **Clone the repository**:
+```bash
+git clone https://github.com/DennisTurco/GitRepoStats.git
+cd GitRepoStats
+```
 
-    - All thresholds can be tuned to make the analysis more or less strict.
-    - Lists (like ExcludeExtensions) can contain one or more entries.
-    - Missing fields will be replaced with default values automatically.
-    - The YAML file is read at runtime, you can modify it without recompiling or restarting the app.
-</aside>
+2. **Install dependencies**:
+```bash
+pip install -r requirements.txt
+```
 
-<aside>
-    Note: *The larger the project (and the fewer filters you apply), the longer the analysis will take.*
-</aside>
+3. **Run the application**:
+```bash
+python gitrepostats.py
+```
 
-## 🐛 Report a BUG
+### Usage
 
-To report a BUG -> [ISSUE](https://github.com/DennisTurco/GitRepoStats/issues)
+1. **Enter Repository Path**: Provide the absolute path to a local Git repository
+2. **(Optional) Set Date Range**: Filter analysis by start/end dates
+3. **(Optional) Select Analysis Modules**:
+   - ☑️ Author Statistics
+   - ☑️ Project Commits
+   - ☑️ Code Complexity
+   - ☑️ Code Duplication
+   - ☑️ Code Ownership
+   - ☑️ Complexity Trends
+4. **Click "Get stats"**: Start the analysis
+5. **View Report**: `repo_stats.html` auto-opens in default browser
 
-## Licence
+### Configuration
+
+GitRepoStats uses **config/preferences.yaml** to customize analysis behavior.
+
+**Key Configuration Options**:
+```yaml
+CodeComplexity:
+  ExcludeExtensions: [js, json]              # Skip these file types
+  HealthyThreshold: 5                        # CCN limit for healthy code
+  
+CodeDuplication:
+  Threshold: 5.0                             # Similarity score threshold
+  
+ComplexityTrend:
+  Granularity: month                         # day, week, month, or quarter
+```
+
+**Configuration Notes**:
+- ✅ All thresholds are configurable (more/less strict)
+- ✅ Changes take effect immediately (no restart needed)
+- ✅ Missing fields use sensible defaults
+- ✅ YAML syntax is validated automatically
+
+**For detailed configuration guide, see [TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md#configuration-system)**
+
+## 📁 Project Structure
+
+```
+GitRepoStats/
+├── gitrepostats.py              # Application entry point
+├── gui.py                       # CustomTkinter GUI interface
+├── repo_management.py           # Core analysis orchestration
+├── dashboard.py                 # HTML report generation
+├── plot.py                      # Plotly visualization layer
+├── preference_reader.py         # Configuration management
+├── logger.py                    # Logging system
+├── entities/                    # Data models & classes
+├── config/
+│   └── preferences.yaml         # Configurable thresholds
+├── test/                        # Test files & validation
+├── docs/                        # Documentation & examples
+├── README.md                    # This file
+├── TECHNICAL_DOCUMENTATION.md   # Architecture & technical details
+├── SUMMARY.md                   # Development backlog & improvement board
+└── requirements.txt             # Python dependencies
+```
+
+## 🛠️ Technology Stack
+
+| Component | Technology | Version | Purpose |
+|-----------|-----------|---------|---------|
+| **GUI** | CustomTkinter | 5.2.2 | Modern desktop UI |
+| **Git Integration** | GitPython | 3.1.45 | Repository interaction |
+| **Code Analysis** | Lizard | 1.18.0 | Complexity metrics (CCN, NLOC) |
+| **Duplication Detection** | SimHash | Latest | Code similarity hashing |
+| **Visualization** | Plotly | 6.3.0 | Interactive charts |
+| **Data Processing** | Pandas | 2.3.3 | Data manipulation |
+| **Math Operations** | NumPy | ≥1.24.0 | Numerical calculations |
+| **Code Quality** | Ruff | Latest | Linting & formatting |
+
+## 📊 Report Output
+
+The generated **repo_stats.html** includes:
+
+### 📋 Authors Tab
+- Per-developer metrics: commits, insertions, deletions, files modified
+- Contribution breakdown by file type/language
+- Stacked bar charts for visual comparison
+- CSV export for each author's metrics
+
+### 📁 Files Tab
+- File-level statistics and modification history
+- Code ownership percentage breakdown per author
+- Language distribution
+- Risk indicators for files with high complexity
+- Sortable, searchable table interface
+
+### 🔍 Code Analysis Tab
+- **Complexity Report**: Function-level CCN ratings with status indicators
+- **Duplication Report**: Similar/duplicated functions with similarity scores
+- **Ownership Report**: Bus factor analysis and risk assessment
+- **Trends**: Complexity evolution over configurable time periods
+- **Interactive Charts**: Hover tooltips, drill-down capabilities
+
+## 🤝 How It Works
+
+```
+1. Clone/Select Repository
+    ↓
+2. Input repository path & select analyses
+    ↓
+3. Application executes:
+    • Git history extraction (GitPython)
+    • Code complexity analysis (Lizard)
+    • Duplication detection (SimHash)
+    • Ownership calculation
+    • Trend analysis
+    ↓
+4. Visualizations generated (Plotly)
+    ↓
+5. Interactive HTML dashboard created
+    ↓
+6. Report auto-opens in browser
+```
+
+## 🚀 Contributing
+
+We welcome contributions! See [SUMMARY.md](./SUMMARY.md) for the development backlog and improvement priorities.
+
+**Contributing steps**:
+1. Fork the repository
+2. Create a feature branch (`feature/my-feature`)
+3. Make your changes
+4. Update [TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md) if applicable
+5. Add tests for new functionality
+6. Submit a pull request
+
+## 📚 Documentation
+
+- **[TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md)** - Architecture, modules, algorithms, configuration
+- **[SUMMARY.md](./SUMMARY.md)** - Development backlog, improvement board, priorities
+- **[docs/](./docs/)** - Additional documentation and examples
+
+## 📄 License
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 
-## Authors
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-- [DennisTurco](https://www.github.com/DennisTurco)
+## 👨‍💻 Author
 
-## Support
+- **[DennisTurco](https://www.github.com/DennisTurco)** - Original creator and maintainer
 
-For support, email: [dennisturco@gmail.com](dennisturco@gmail.com)
+## 📧 Support
+
+For support, questions, or suggestions:
+- 📧 Email: [dennisturco@gmail.com](mailto:dennisturco@gmail.com)
+- 🐛 Issues: [GitHub Issues](https://github.com/DennisTurco/GitRepoStats/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/DennisTurco/GitRepoStats/discussions)
+
+## 🌟 Acknowledgments
+
+Built with:
+- [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) - Modern UI framework
+- [GitPython](https://github.com/gitpython-developers/GitPython) - Git integration
+- [Lizard](https://github.com/terryyin/lizard) - Code complexity analysis
+- [Plotly](https://plotly.com/) - Interactive visualizations
+
+---
+
+**⭐ If you find this project useful, please consider giving it a star on GitHub!**

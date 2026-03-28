@@ -29,6 +29,9 @@ class Dashboard:
             data_table_bus_factor = Dashboard.__list_to_html_table(
                 data.csv_bus_factor, "tableBusFactor"
             )
+            data_table_complexity_trend = Dashboard.__list_to_html_table(
+                data.csv_complexity_trend, "tableComplexityTrend"
+            )
             html_page = Dashboard.__build_and_get_html_page(
                 data,
                 data_table_files,
@@ -38,6 +41,7 @@ class Dashboard:
                 data_table_code_duplication,
                 data_table_bus_factor_summary,
                 data_table_bus_factor,
+                data_table_complexity_trend,
             )
             f.write(html_page)
 
@@ -115,6 +119,7 @@ class Dashboard:
         data_table_code_duplication: str,
         data_table_bus_factor_summary: str,
         data_table_bus_factor: str,
+        data_table_complexity_trend: str,
     ) -> str:
         html_page = f"""
 <!DOCTYPE html>
@@ -314,6 +319,33 @@ class Dashboard:
     </div>
 
     <div id="CodeAnalysis" class="tabcontent">
+        <h2> Code Complexity Trend </h2>
+        <details class="chart-info">
+            <summary>ℹ️ Data description</summary>
+            <aside>
+                <p>
+                    This section shows how the <b>cyclomatic complexity</b> of your code evolves over time.
+                </p>
+                <h4>Key Metrics:</h4>
+                <ul>
+                    <li><b>Avg CCN</b>: Average Cyclomatic Complexity Number (main indicator)</li>
+                    <li><b>Avg NLOC</b>: Average Number of Lines of Code per function</li>
+                    <li><b>CCN Trend</b>: Visual trend line showing if complexity is improving or degrading</li>
+                </ul>
+                <h4>How to interpret:</h4>
+                <ul>
+                    <li>📈 <b>Increasing trend</b>: Code is becoming more complex (⚠️ watch out!)</li>
+                    <li>📉 <b>Decreasing trend</b>: Code is being simplified and refactored (✅ good!)</li>
+                    <li>➡️ <b>Stable trend</b>: Complexity remains consistent</li>
+                </ul>
+            </aside>
+        </details>
+
+        {data.chart_complexity_trend_html}
+
+        <h3> Complexity Trend Over Time </h3>
+        {data_table_complexity_trend}
+
         <h2> Code Complexity </h2>
         <details class="chart-info">
             <summary>ℹ️ Data description</summary>

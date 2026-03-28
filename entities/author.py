@@ -21,10 +21,10 @@ class Author:
         )
 
     def get_pos_inside(self, authors: list["Author"]) -> int:
-        for i in range(len(authors)):
-            if self.main_email in authors[i].emails:
+        for i, author in enumerate(authors):
+            if self.main_email in author.emails:
                 return i
-            if self.main_username.lower() == authors[i].main_username.lower():
+            if self.main_username.lower() == author.main_username.lower():
                 return i
         return -1
 
