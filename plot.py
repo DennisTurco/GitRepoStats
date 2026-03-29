@@ -1,4 +1,5 @@
 import hashlib
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -355,10 +356,6 @@ class Plot:
         return fig.to_html(full_html=False, include_plotlyjs=False)
 
     def get_complexity_trend_html(self):
-        """Generates line chart showing cyclomatic complexity evolution over time"""
-        if not hasattr(self, 'complexity_trend') or not self.complexity_trend:
-            return "<p>No complexity trend data available</p>"
-
         df = pd.DataFrame({
             'Period': [t.period for t in self.complexity_trend],
             'Date': [pd.to_datetime(t.date) for t in self.complexity_trend],
@@ -367,9 +364,6 @@ class Plot:
             'Avg Token': [t.avg_token for t in self.complexity_trend],
             'Function Count': [t.function_count for t in self.complexity_trend],
         })
-
-        if len(df) == 0:
-            return "<p>No complexity trend data available</p>"
 
         df = df.sort_values('Date')
 
@@ -435,21 +429,3 @@ class Plot:
         )
 
         return fig.to_html(full_html=False, include_plotlyjs=False)
-
-    def get_complexity_trend_table_html(self):
-        """Generates HTML table with complexity trend details"""
-        if not hasattr(self, 'complexity_trend') or not self.complexity_trend:
-            return "<p>No complexity trend data available</p>"
-
-        df = pd.DataFrame({
-            'Period': [t.period for t in self.complexity_trend],
-            'Avg CCN': [f"{t.avg_ccn:.2f}" for t in self.complexity_trend],
-            'Avg NLOC': [f"{t.avg_nloc:.2f}" for t in self.complexity_trend],
-            'Total Functions': [t.function_count for t in self.complexity_trend],
-        })
-
-        html = "<div style='overflow-x: auto;'>"
-        html += df.to_html(index=False, border=0, classes='table table-striped')
-        html += "</div>"
-
-        return html

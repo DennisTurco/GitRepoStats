@@ -1,4 +1,5 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
 from entities.period_filter import PeriodFilter
 
 
@@ -20,7 +21,5 @@ class Data:
     csv_code_duplication: list[str]
     csv_bus_factor_summary: list[str]
     csv_bus_factor: list[str]
-    chart_complexity_trend_html: str = ""
-    csv_complexity_trend: list[str] = field(default_factory=list)
-
-
+    chart_complexity_trend: str
+    csv_complexity_trend: list[str]

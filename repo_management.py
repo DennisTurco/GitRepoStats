@@ -456,7 +456,7 @@ class RepoManagement:
                 log_box=self.log_box,
                 log_type=Logger.LogType.WARN,
             )
-        
+
         for ref in self._repo_obj.refs:
             if ref.name.startswith("origin/") or ref in self._repo_obj.branches:
                 commit = ref.commit
@@ -674,7 +674,7 @@ class RepoManagement:
         code_complexity: list[LizardData] | None,
         code_duplication: list[DuplicationData] | None,
         bus_factor: list[BusFactorData] | None,
-        complexity_trend: list[ComplexityTrendData] | None = None,
+        complexity_trend: list[ComplexityTrendData] | None,
     ) -> None:
         Logger.write_log("Preparing data for plotting", log_box=self.log_box)
 
@@ -736,11 +736,10 @@ class RepoManagement:
             if self.report_config.bus_factor and bus_factor
             else ["No data available"]
         )
-        complexity_trend_html = (
-            plot.get_complexity_trend_html() if complexity_trend and len(complexity_trend) > 0 else ""
-        )
-        complexity_trend_table_html = (
-            plot.get_complexity_trend_table_html() if complexity_trend and len(complexity_trend) > 0 else ""
+        complexity_trend_summary_html = (
+            plot.get_complexity_trend_html()
+            if complexity_trend and len(complexity_trend) > 0
+            else ""
         )
         csv_complexity_trend = (
             ComplexityTrendData.to_csv_data_list(complexity_trend)
@@ -765,7 +764,7 @@ class RepoManagement:
             csv_code_duplication,
             csv_bus_factor_summary,
             csv_bus_factor,
-            complexity_trend_html,
+            complexity_trend_summary_html,
             csv_complexity_trend,
         )
 

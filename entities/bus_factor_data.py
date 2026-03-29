@@ -1,5 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
+
 from entities.author import Author
 
 
@@ -41,7 +42,8 @@ class BusFactorData:
     def __get_total_file_lines_by_author(self, author: Author) -> int:
         lines = 0
         for owner in self.owners:
-            if owner.author != author: continue
+            if owner.author != author:
+                continue
             lines += owner.lines
         return lines
 

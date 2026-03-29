@@ -1,8 +1,8 @@
-from datetime import datetime
-from typing import Optional
-from enum import Enum
-import sys
 import os
+import sys
+from datetime import datetime
+from enum import Enum
+from typing import Optional
 
 FILE_PATH = "./logs.log"
 

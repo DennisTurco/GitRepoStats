@@ -94,7 +94,7 @@ CodeComplexity:
 ComplexityTrend:
   # Enable complexity trend analysis (analyzes evolution over time)
   Enabled: true
-  
+
   # Time granularity for aggregating complexity data
   # Options: day, week, month, quarter
   Granularity: month

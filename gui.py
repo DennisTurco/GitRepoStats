@@ -1,9 +1,10 @@
+import datetime
+import subprocess as sp
 import sys
 import threading
-import subprocess as sp
-import customtkinter as ctk
-import datetime
 import tkinter as tk
+
+import customtkinter as ctk
 
 from entities.period_filter import PeriodFilter
 from entities.report_config import ReportConfig

@@ -10,7 +10,9 @@ class Dashboard:
     @staticmethod
     def generate_html_page(data: Data) -> None:
         with open(FILE_PATH, "w", encoding="utf-8") as f:
-            data_table_files = Dashboard.__list_to_html_table(data.csv_file_stats, "tableFiles")
+            data_table_files = Dashboard.__list_to_html_table(
+                data.csv_file_stats, "tableFiles"
+            )
             data_table_branches = Dashboard.__list_to_html_table(
                 data.csv_branches_stats, "tableBranches"
             )
@@ -141,7 +143,7 @@ class Dashboard:
             $('#tableFiles').DataTable({{
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
-                "order": []
+                "order": [1, "desc"],
             }});
             $('#tableBranches').DataTable({{
                 "pageLength": 20,
@@ -163,7 +165,7 @@ class Dashboard:
             $('#tableCodeDuplication').DataTable({{
                 "pageLength": 20,
                 "lengthMenu": [5, 10, 20, 50, 100],
-                "order": [0]
+                "order": [0, "asc"]
             }});
             $('#tableBusFactorSummary').DataTable({{
                 "pageLength": 20,
@@ -177,6 +179,11 @@ class Dashboard:
                 "rowGroup": {{
                     dataSrc: 0
                 }}
+            }});
+            $('#tableComplexityTrend').DataTable({{
+                "pageLength": 20,
+                "lengthMenu": [5, 10, 20, 50, 100],
+                "order": []
             }});
         }});
     </script>
@@ -341,7 +348,7 @@ class Dashboard:
             </aside>
         </details>
 
-        {data.chart_complexity_trend_html}
+        {data.chart_complexity_trend}
 
         <h3> Complexity Trend Over Time </h3>
         {data_table_complexity_trend}

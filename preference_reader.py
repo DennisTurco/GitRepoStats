@@ -1,4 +1,5 @@
 import yaml
+
 from entities.preferences import (
     AuthorStatsPreferences,
     CodeComplexityPreference,

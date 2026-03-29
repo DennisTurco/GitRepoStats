@@ -6,8 +6,8 @@ class Author:
         self,
         main_email: str,
         main_username: str,
-        usernames: Optional[list[str]] = None,
-        emails: Optional[list[str]] = None,
+        usernames: Optional[list[str]] = None, # noqa: UP045
+        emails: Optional[list[str]] = None,  # noqa: UP045
     ) -> None:
         self.main_email = main_email
         self.main_username = main_username
