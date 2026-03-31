@@ -11,6 +11,7 @@ from entities.bus_factor_data import BusFactorData, FileOwner
 from entities.complexity_trend import CommitComplexityData, ComplexityTrendData
 from entities.count_per_extension import CountPerExtension
 from entities.data import Data
+from entities.data_overview import OverviewData
 from entities.duplication_data import DuplicationData
 from entities.lizard_data import LizardData, LizardLocation
 from entities.period_filter import PeriodFilter
@@ -60,8 +61,8 @@ class RepoManagement:
             else []
         )
         complexity_trend = (
-            self.__analyze_complexity_trend(code_complexity)
-            if self.report_config.code_complexity and code_complexity
+            self.__analyze_complexity_trend()
+            if self.report_config.code_complexity
             else []
         )
         code_duplication = (
@@ -151,144 +152,67 @@ class RepoManagement:
             )
             return ""
 
-    def __analyze_complexity_trend(self, code_complexity: list[LizardData] | None) -> list[ComplexityTrendData]:
-        """Analyzes cyclomatic complexity evolution over time.
+    def __analyze_complexity_trend(self) -> list[ComplexityTrendData]:
 
-        Strategy: Uses current complexity data and maps each function to when its file was last modified.
-        This gives us the evolution of complexity across the repository's history.
-        """
-        Logger.write_log("Analyzing complexity trend from file modification history...", log_box=self.log_box)
+        Logger.write_log("Analyzing repository complexity evolution (snapshot-based)...", log_box=self.log_box)
+
+        repo = self._repo_obj
+        original_head = repo.head.commit.hexsha
+
+        trends: list[ComplexityTrendData] = []
 
         try:
-            if not code_complexity:
-                Logger.write_log("No complexity data available for trend analysis", log_box=self.log_box)
-                return []
+            snapshots = {}
 
-            # Map each function to its last commit date
-            commit_complexity_data: list[CommitComplexityData] = []
-            processed_files = 0
+            for commit in repo.iter_commits("HEAD", first_parent=True):
+                date = commit.committed_datetime.replace(tzinfo=None)
+                period = date.strftime("%Y-%m")
 
-            for complexity_data in code_complexity:
-                file_path = complexity_data.location.file
+                if period not in snapshots:
+                    snapshots[period] = commit
 
-                try:
-                    # Get the last commit date for this file
-                    rel_path = os.path.relpath(file_path, self._repo_obj.working_tree_dir).replace("\\", "/")
-                    last_commit = None
+            Logger.write_log(f"Found {len(snapshots)} monthly snapshots", log_box=self.log_box,)
 
-                    for commit in self._repo_obj.iter_commits(all=True, paths=[rel_path]):
-                        last_commit = commit
-                        break  # First (most recent) commit
+            for period, commit in sorted(snapshots.items()):
+                Logger.write_log(f"Analyzing snapshot {period} ({commit.hexsha[:8]})", log_box=self.log_box)
 
-                    if not last_commit:
-                        # File not in history (maybe new), use current date
-                        last_commit_date = datetime.now()
-                        last_commit_hash = "HEAD"
-                    else:
-                        last_commit_date = last_commit.committed_datetime.replace(tzinfo=None)
-                        last_commit_hash = last_commit.hexsha
+                repo.git.checkout(commit.hexsha)
 
-                    commit_complexity_data.append(
-                        CommitComplexityData(
-                            commit_hash=last_commit_hash,
-                            commit_date=last_commit_date,
-                            file_path=file_path,
-                            function_name=complexity_data.location.function,
-                            ccn=complexity_data.ccn,
-                            nloc=complexity_data.nloc,
-                            token=complexity_data.token,
-                            param=complexity_data.param,
-                            length=complexity_data.length,
-                        )
-                    )
-                    processed_files += 1
-                    if processed_files % 50 == 0:
-                        Logger.write_log(
-                            f"Processed {processed_files} files... Data points: {len(commit_complexity_data)}",
-                            log_box=self.log_box,
-                        )
-                except Exception as e:
-                    Logger.write_log(
-                        f"Error getting history for {file_path}: {e}",
-                        log_box=self.log_box,
-                        log_type=Logger.LogType.WARN,
-                    )
+                snapshot_complexity = self.__analyze_code_complexity_with_lizard()
+
+                if not snapshot_complexity:
                     continue
 
-            Logger.write_log(
-                f"Complexity trend analysis complete: {len(commit_complexity_data)} data points from {len(code_complexity)} functions",
-                log_box=self.log_box,
-            )
+                total_ccn = sum(f.ccn for f in snapshot_complexity)
+                total_nloc = sum(f.nloc for f in snapshot_complexity)
+                total_token = sum(f.token for f in snapshot_complexity)
+                total_param = sum(f.param for f in snapshot_complexity)
 
-            if not commit_complexity_data:
-                return []
+                function_count = len(snapshot_complexity)
 
-            # Aggregate data by period
-            return self.__aggregate_complexity_trend(commit_complexity_data)
-
-        except Exception as e:
-            Logger.write_log(
-                f"Error analyzing complexity trend: {e}",
-                log_box=self.log_box,
-                log_type=Logger.LogType.WARN,
-            )
-            return []
-
-    def __aggregate_complexity_trend(
-        self, commit_data: list[CommitComplexityData], granularity: str = "month"
-    ) -> list[ComplexityTrendData]:
-        """Aggregates commit-level complexity data into periods (month/week/day)"""
-        if not commit_data:
-            return []
-
-        # Group by period
-        period_map: dict[str, list[CommitComplexityData]] = defaultdict(list)
-
-        for data in commit_data:
-            if granularity == "month":
-                period = data.commit_date.strftime("%Y-%m")
-            elif granularity == "week":
-                period = data.commit_date.strftime("%Y-W%U")
-            elif granularity == "quarter":
-                quarter = (data.commit_date.month - 1) // 3 + 1
-                period = f"{data.commit_date.year}-Q{quarter}"
-            else:  # day
-                period = data.commit_date.strftime("%Y-%m-%d")
-            
-            period_map[period].append(data)
-        
-        # Calculate aggregates
-        trends: list[ComplexityTrendData] = []
-        for period, data_list in sorted(period_map.items()):
-            if not data_list:
-                continue
-            
-            avg_ccn = sum(d.ccn for d in data_list) / len(data_list)
-            avg_nloc = sum(d.nloc for d in data_list) / len(data_list)
-            avg_token = sum(d.token for d in data_list) / len(data_list)
-            avg_param = sum(d.param for d in data_list) / len(data_list)
-            total_ccn = sum(d.ccn for d in data_list)
-            total_nloc = sum(d.nloc for d in data_list)
-            
-            # Use first commit date as period start
-            period_date = min(d.commit_date for d in data_list)
-            
-            trends.append(
-                ComplexityTrendData(
-                    period=period,
-                    date=period_date,
-                    avg_ccn=avg_ccn,
-                    avg_nloc=avg_nloc,
-                    avg_token=avg_token,
-                    avg_param=avg_param,
-                    function_count=len(data_list),
-                    total_ccn=total_ccn,
-                    total_nloc=total_nloc,
+                trends.append(
+                    ComplexityTrendData(
+                        period=period,
+                        date=commit.committed_datetime.replace(tzinfo=None),
+                        avg_ccn=total_ccn / function_count,
+                        avg_nloc=total_nloc / function_count,
+                        avg_token=total_token / function_count,
+                        avg_param=total_param / function_count,
+                        function_count=function_count,
+                        total_ccn=total_ccn,
+                        total_nloc=total_nloc,
+                    )
                 )
-            )
-        
+
+        finally:
+            repo.git.checkout(original_head)
+
         ComplexityTrendData.sort_by_date(trends)
+
+        Logger.write_log(f"Complexity trend built from {len(trends)} repository snapshots", log_box=self.log_box)
+
         return trends
+
 
     def __find_possible_duplicates(self, stats: list[LizardData]) -> list[DuplicationData]:
         Logger.write_log("Analyzing code duplication (prehashed)...", log_box=self.log_box)
@@ -747,9 +671,21 @@ class RepoManagement:
             else ["No data available"]
         )
 
+        if commits_stats and len(commits_stats) > 0:
+            CommitStats.sort_by_date(commits_stats)
+        commits = len(commits_stats) if self.report_config.commits and commits_stats else None
+        last_commit = commits_stats[len(commits_stats)-1].date if self.report_config.commits and commits_stats else None
+        branches = len(branches_stats) if self.report_config.branches and branches_stats else None
+        authors = len(all_stats) if self.report_config.authors and all_stats else None
+        files = len(file_stats) if self.report_config.files and file_stats else None
+        complexity_avg = LizardData.calculate_complessity_avg(code_complexity) if code_complexity else None
+        overview = OverviewData(commits, last_commit, branches, authors, files, complexity_avg)
+        overview_html = plot.get_overview_html(overview)
+
         data_to_plot = Data(
             self.repo_name,
             self.period,
+            overview_html,
             authors_html,
             files_html,
             languages_html,

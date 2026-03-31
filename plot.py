@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from entities.complexity_trend import ComplexityTrendData
+from entities.data_overview import OverviewData
 from entities.stats.author_stats import AuthorStats
 from entities.stats.branch_stats import BranchStats
 from entities.stats.commit_stats import CommitStats
@@ -429,3 +430,142 @@ class Plot:
         )
 
         return fig.to_html(full_html=False, include_plotlyjs=False)
+
+    def get_overview_html(self, overview: OverviewData) -> str:
+
+        def value(v):
+            return v if v is not None else "N/A"
+
+        cards = [
+            {
+                "title": "Commits",
+                "value": value(overview.commits),
+                "icon": "📦",
+                "desc": "Total number of commits in the selected period.",
+            },
+            {
+                "title": "Last Commit",
+                "value": value(overview.last_commit),
+                "icon": "📅",
+                "desc": "Last commit in the selected period.",
+            },
+            {
+                "title": "Branches",
+                "value": value(overview.branches),
+                "icon": "🌿",
+                "desc": "Branches created by contributors.",
+            },
+            {
+                "title": "Authors",
+                "value": value(overview.authors),
+                "icon": "👨‍💻",
+                "desc": "Contributors active in this repository.",
+            },
+            {
+                "title": "Files",
+                "value": value(overview.files),
+                "icon": "📁",
+                "desc": "Total files in this repository.",
+            },
+            # {
+            #     "title": "Code Duplication",
+            #     "value": f"{overview.duplication_percentage:.2f}%"
+            #     if overview.duplication_percentage is not None
+            #     else "N/A",
+            #     "icon": "🧬",
+            #     "desc": "Percentage of duplicated code blocks.",
+            # },
+            {
+                "title": "Avg Complexity",
+                "value": f"{overview.complexity_avg:.2f}"
+                if overview.complexity_avg is not None
+                else "N/A",
+                "icon": "📈",
+                "desc": "Average cyclomatic complexity of functions.",
+            },
+        ]
+
+        cards_html = ""
+
+        for c in cards:
+            cards_html += f"""
+            <div class="overview-card">
+                <div class="overview-icon">{c['icon']}</div>
+                <div class="overview-title">{c['title']}</div>
+                <div class="overview-value">{c['value']}</div>
+                <div class="overview-desc">{c['desc']}</div>
+            </div>
+            """
+
+        html = f"""
+            <style>
+
+            .overview-container {{
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 22px;
+                margin: 40px 0;
+                font-family: Arial, sans-serif;
+            }}
+
+            /* Tablet */
+            @media (max-width: 1100px) {{
+                .overview-container {{
+                    grid-template-columns: repeat(2, 1fr);
+                }}
+            }}
+
+            /* Mobile */
+            @media (max-width: 700px) {{
+                .overview-container {{
+                    grid-template-columns: 1fr;
+                }}
+            }}
+
+            .overview-card {{
+                background: white;
+                border-radius: 14px;
+                padding: 28px;
+                box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+                transition: all 0.25s ease;
+            }}
+
+            .overview-card:hover {{
+                transform: translateY(-6px);
+                box-shadow: 0 10px 28px rgba(0,0,0,0.15);
+            }}
+
+            .overview-icon {{
+                font-size: 34px;
+                margin-bottom: 10px;
+            }}
+
+            .overview-title {{
+                font-size: 13px;
+                font-weight: bold;
+                color: #888;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+            }}
+
+            .overview-value {{
+                font-size: 34px;
+                font-weight: 700;
+                margin: 8px 0;
+                color: #111;
+            }}
+
+            .overview-desc {{
+                font-size: 13px;
+                color: #666;
+                line-height: 1.4em;
+            }}
+
+            </style>
+
+            <div class="overview-container">
+                {cards_html}
+            </div>
+            """
+
+        return html

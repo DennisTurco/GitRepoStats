@@ -297,9 +297,14 @@ class Dashboard:
     </h1>
     <h3>Period: {data.period}</h3>
     <div class="tab">
-        <button class="tablinks" onclick="openTab(event, 'Authors')" id="defaultOpen">Authors</button>
+        <button class="tablinks" onclick="openTab(event, 'ProjectOverview')" id="defaultOpen">Project Overview</button>
+        <button class="tablinks" onclick="openTab(event, 'Authors')">Authors</button>
         <button class="tablinks" onclick="openTab(event, 'Files')">Files</button>
         <button class="tablinks" onclick="openTab(event, 'CodeAnalysis')">Code Analysis</button>
+    </div>
+
+    <div id="ProjectOverview" class="tabcontent">
+        {data.overview_html}
     </div>
 
     <div id="Authors" class="tabcontent">

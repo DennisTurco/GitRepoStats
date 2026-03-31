@@ -146,3 +146,10 @@ class LizardData:
         if value <= warning_limit:
             return Status.NEEDS_ATTENTION
         return Status.AT_RISK
+
+    @staticmethod
+    def calculate_complessity_avg(data: list["LizardData"]):
+        sum = 0
+        for d in data:
+            sum += d.ccn
+        return sum / len(data)

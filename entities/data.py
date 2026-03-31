@@ -7,6 +7,7 @@ from entities.period_filter import PeriodFilter
 class Data:
     repo_name: str
     period: PeriodFilter
+    overview_html: str
     chart_authors_html: str
     chart_files_html: str
     chart_languages_html: str
