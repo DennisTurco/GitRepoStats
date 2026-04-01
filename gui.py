@@ -25,7 +25,7 @@ class GUI(ctk.CTk):
     def init_window(self) -> None:
         self.iconbitmap("./imgs/logo.ico")
         ctk.set_appearance_mode("System")
-        ctk.set_default_color_theme("green")
+        ctk.set_default_color_theme("blue")
         self.title("Git Repo Stats")
         self.centerWindow()
         self.minsize(850, 400)
@@ -155,6 +155,13 @@ class GUI(ctk.CTk):
         )
         self.get_button.grid(row=2, column=0, columnspan=2, pady=15, sticky="s")
 
+        self.progress = ctk.CTkProgressBar(self)
+        self.progress.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.progress.set(0)
+
+        self.status_label = ctk.CTkLabel(self, text="Ready")
+        self.status_label.grid(row=4, column=0, columnspan=2)
+
     def ensure_one_checked(self):
         self.__check_at_least_one_if_necessary()
         if (
@@ -217,7 +224,7 @@ class GUI(ctk.CTk):
 
     def get_stats(self, repo_path: str, start_date, end_date) -> None:
         try:
-            self.get_button.configure(state="disabled")
+            self.set_ui_state(False)
             period = PeriodFilter(start_date, end_date)
             report_config = ReportConfig(
                 self.stats_vars["author"].get(),
@@ -236,11 +243,37 @@ class GUI(ctk.CTk):
                 message="Unexpected error", log_type=Logger.LogType.ERROR, log_box=self, exception=e
             )
         finally:
-            self.get_button.configure(state="normal")
+            self.set_ui_state(True)
+            self.progress.stop()
+            self.progress.set(0)
+            self.status_label.configure(text="")
 
-    def write_to_logbox(self, message: str) -> None:
+    def set_ui_state(self, enabled: bool):
+        state = "normal" if enabled else "disabled"
+
+        self.get_button.configure(state=state)
+        self.entry_repopath.configure(state=state)
+        self.entry_start_date.configure(state=state)
+        self.entry_end_date.configure(state=state)
+
+        for cb in [
+            self.check_author,
+            self.check_commits,
+            self.check_branches,
+            self.check_files,
+            self.check_code_complexity,
+            self.check_code_duplication,
+            self.check_bus_factor,
+        ]:
+            cb.configure(state=state)
+
+    def write_to_logbox(self, message: str):
         message = str(message).encode("utf-8", errors="replace").decode("utf-8")
         self.after(0, lambda: self.__append_to_log(message))
+
+    def write_current_step(self, message: str, current_step: int, total_steps: int):
+        self.after(0, lambda: self.status_label.configure(text=message))
+        self.progress.set(current_step/total_steps)
 
     def __open_yaml_file(self):
         file_name = "./config/preferences.yaml"

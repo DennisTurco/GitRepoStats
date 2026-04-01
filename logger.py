@@ -60,12 +60,7 @@ class Logger:
         else:
             new_log_entry = f"{datetime.now()} {log_prefix} {message}\n"
 
-        safe_message = new_log_entry.strip()
-
-        try:
-            sys.stdout.buffer.write((safe_message + "\n").encode("utf-8", errors="replace"))
-        except Exception:
-            print(safe_message.encode("ascii", errors="replace").decode("ascii"))
+        safe_message = Logger.__get_safe_message(new_log_entry)
 
         if log_box is not None:
             log_box.write_to_logbox(safe_message)
@@ -85,3 +80,17 @@ class Logger:
         with open(FILE_PATH, "w", encoding="utf-8") as file:
             file.write(new_log_entry)
             file.writelines(existing_content)
+
+    @staticmethod
+    def update_current_step(message: str, state_label, step: int, total_steps: int):
+        message = Logger.__get_safe_message(message)
+        state_label.write_current_step(message, step, total_steps)
+
+    @staticmethod
+    def __get_safe_message(new_log_entry: str):
+        safe_message = new_log_entry.strip()
+        try:
+            sys.stdout.buffer.write((safe_message + "\n").encode("utf-8", errors="replace"))
+        except Exception:
+            print(safe_message.encode("ascii", errors="replace").decode("ascii"))
+        return safe_message

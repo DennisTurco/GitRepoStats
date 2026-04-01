@@ -42,3 +42,7 @@ class Author:
             if author.main_username == username or username in author.usernames:
                 return author
         return None
+
+    @staticmethod
+    def get_unknown_author():
+        return Author("unknown", "Unknown")

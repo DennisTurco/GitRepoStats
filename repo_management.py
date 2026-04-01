@@ -1,14 +1,15 @@
 import os
-from collections import defaultdict
-from datetime import datetime
+import tempfile
+import shutil
 
 import lizard
 from git import Repo
+from pathlib import Path
 
 from dashboard import Dashboard
 from entities.author import Author
 from entities.bus_factor_data import BusFactorData, FileOwner
-from entities.complexity_trend import CommitComplexityData, ComplexityTrendData
+from entities.complexity_trend import ComplexityTrendData
 from entities.count_per_extension import CountPerExtension
 from entities.data import Data
 from entities.data_overview import OverviewData
@@ -26,13 +27,13 @@ from preference_reader import PreferenceReader
 
 
 class RepoManagement:
-    def __init__(self, repo_path: str, log_box, period: PeriodFilter, report_config: ReportConfig):
+    def __init__(self, repo_path: str, gui, period: PeriodFilter, report_config: ReportConfig):
         self.repo_path = repo_path
         try:
             self._repo_obj = Repo(repo_path)
         except Exception as e:
             raise Exception("The project path provided is not a GitHub repository") from e
-        self.log_box = log_box
+        self.gui = gui
         self.period = period
         self.report_config = report_config
         self.repo_name = self.__get_repo_name_from_path(repo_path)
@@ -55,29 +56,64 @@ class RepoManagement:
         branches_stats = None
         complexity_trend = None
         authors = self.__get_authors()  # to obtain only the unique author without duplications
+
+        steps = self.report_config.get_total_requested_steps()
+        step = 1
+
+        if self.report_config.code_complexity:
+            Logger.update_current_step(f"{step}/{steps}: Calculating code complexity", self.gui, step, steps)
+            step += 1
         code_complexity = (
-            self.__analyze_code_complexity_with_lizard()
+            self.__analyze_code_complexity_with_lizard(None)
             if self.report_config.code_complexity
             else []
         )
+
+        if self.report_config.code_complexity:
+            Logger.update_current_step(f"{step}/{steps}: Calculating code complexity trend", self.gui, step, steps)
+            step += 1
         complexity_trend = (
             self.__analyze_complexity_trend()
             if self.report_config.code_complexity
             else []
         )
+
+        if self.report_config.code_duplication:
+            Logger.update_current_step(f"{step}/{steps}: Calculating code duplication", self.gui, step, steps)
+            step += 1
         code_duplication = (
             self.__find_possible_duplicates(code_complexity)
             if self.report_config.code_duplication
             else []
         )
+
+        if self.report_config.bus_factor:
+            Logger.update_current_step(f"{step}/{steps}: Calculating code ownership", self.gui, step, steps)
+            step += 1
         bus_factor = self.__get_bus_factor_data(authors) if self.report_config.bus_factor else None
+
+        if self.report_config.authors:
+            Logger.update_current_step(f"{step}/{steps}: Calculating author stats", self.gui, step, steps)
+            step += 1
         author_stats = (
             self.__get_authors_stats_list(authors) if self.report_config.authors else None
         )
+
+        if self.report_config.files:
+            Logger.update_current_step(f"{step}/{steps}: Calculating file stats", self.gui, step, steps)
+            step += 1
         file_stats = self.__get_files_stats_list(authors) if self.report_config.files else None
+
+        if self.report_config.commits:
+            Logger.update_current_step(f"{step}/{steps}: Calculating commits stats", self.gui, step, steps)
+            step += 1
         commits_stats = (
             self.__get_commits_stats_list(authors) if self.report_config.commits else None
         )
+
+        if self.report_config.branches:
+            Logger.update_current_step(f"{step}/{steps}: Calculating branches stats", self.gui, step, steps)
+            step += 1
         branches_stats = (
             self.__get_branches_stats_list(authors) if self.report_config.branches else None
         )
@@ -93,24 +129,22 @@ class RepoManagement:
             complexity_trend,
         )
 
-    def __analyze_code_complexity_with_lizard(self) -> list[LizardData]:
-        Logger.write_log(
-            f"Calculating code complexity for {self.repo_path}...", log_box=self.log_box
-        )
+    def __analyze_code_complexity_with_lizard(self, repo_path: Path | None = None) -> list[LizardData]:
+        target_path = Path(repo_path) if repo_path else Path(self.repo_path)
+
+        Logger.write_log(f"Calculating code complexity for {target_path}...", log_box=self.gui)
+
         try:
-            results = lizard.analyze([self.repo_path])
+            results = lizard.analyze([str(target_path)])
         except Exception as e:
-            Logger.write_log(
-                f"Error analyzing code complexity: {e}",
-                log_box=self.log_box,
-                log_type=Logger.LogType.WARN,
-            )
+            Logger.write_log(f"Error analyzing code complexity: {e}", log_box=self.gui, log_type=Logger.LogType.WARN)
             return []
 
         all_functions: list[LizardData] = []
 
         for file_info in results:
             for fun in file_info.function_list:
+
                 if self.__skip_function_from_analysis(
                     fun.name,
                     fun.start_line,
@@ -118,67 +152,106 @@ class RepoManagement:
                     self.__get_extension_from_file(file_info.filename),
                 ):
                     continue
+
                 data = LizardData(
                     nloc=fun.nloc,
                     ccn=fun.cyclomatic_complexity,
                     token=fun.token_count,
                     param=fun.parameter_count,
                     length=fun.length,
-                    code=self.__get_function_code(file_info.filename, fun.start_line, fun.end_line),
+                    code=self.__get_function_code(
+                        file_info.filename,
+                        fun.start_line,
+                        fun.end_line,
+                    ),
                     location=LizardLocation(
                         function=fun.name,
                         lines=f"{fun.start_line}-{fun.end_line}",
                         file=file_info.filename,
                     ),
                 )
+
                 all_functions.append(data)
 
-        Logger.write_log(
-            f"Code complexity calculated successfully: {len(all_functions)} functions",
-            log_box=self.log_box,
-        )
+        Logger.write_log(f"Code complexity calculated successfully: {len(all_functions)} functions", log_box=self.gui)
+
         return all_functions
 
     def __get_function_code(self, filename: str, start_line: int, end_line: int) -> str:
         try:
-            with open(filename, encoding="utf-8") as f:
-                lines = f.readlines()
-                return "".join(lines[start_line - 1 : end_line]).strip()
+            with open(filename, "rb") as f:
+                raw = f.read()
+
+            # try utf-8 first
+            try:
+                text = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                # fallback encoding
+                text = raw.decode("latin-1", errors="ignore")
+
+            lines = text.splitlines()
+
+            return "\n".join(lines[start_line - 1 : end_line]).strip()
+
         except Exception as e:
-            Logger.write_log(
-                f"An error occurred while reading file {filename}: {e}",
-                log_box=self.log_box,
-                log_type=Logger.LogType.WARN,
-            )
+            Logger.write_log(f"An error occurred while reading file {filename}: {e}", log_box=self.gui, log_type=Logger.LogType.WARN)
             return ""
 
     def __analyze_complexity_trend(self) -> list[ComplexityTrendData]:
-
-        Logger.write_log("Analyzing repository complexity evolution (snapshot-based)...", log_box=self.log_box)
+        Logger.write_log("Analyzing repository complexity evolution (snapshot-based)...", log_box=self.gui,)
 
         repo = self._repo_obj
-        original_head = repo.head.commit.hexsha
-
         trends: list[ComplexityTrendData] = []
 
-        try:
-            snapshots = {}
+        snapshots = {}
 
-            for commit in repo.iter_commits("HEAD", first_parent=True):
-                date = commit.committed_datetime.replace(tzinfo=None)
-                period = date.strftime("%Y-%m")
+        # ---- collect monthly snapshots ----
+        for commit in repo.iter_commits("HEAD", first_parent=True):
+            date = commit.committed_datetime.replace(tzinfo=None)
+            period = date.strftime("%Y-%m")
 
-                if period not in snapshots:
-                    snapshots[period] = commit
+            if period not in snapshots:
+                snapshots[period] = commit
 
-            Logger.write_log(f"Found {len(snapshots)} monthly snapshots", log_box=self.log_box,)
+        Logger.write_log(f"Found {len(snapshots)} monthly snapshots", log_box=self.gui,)
 
-            for period, commit in sorted(snapshots.items()):
-                Logger.write_log(f"Analyzing snapshot {period} ({commit.hexsha[:8]})", log_box=self.log_box)
+        # ---- temporal sampling ----
+        snapshot_items = sorted(snapshots.items())
 
-                repo.git.checkout(commit.hexsha)
+        count = len(snapshot_items)
 
-                snapshot_complexity = self.__analyze_code_complexity_with_lizard()
+        if count > 240:
+            step = 6
+        elif count > 120:
+            step = 3
+        elif count > 36:
+            step = 2
+        else:
+            step = 1
+
+        snapshot_items = snapshot_items[::step]
+
+        Logger.write_log(
+            f"Temporal sampling applied: every {step} month(s) "
+            f"({len(snapshot_items)} snapshots selected)",
+            log_box=self.gui,
+        )
+
+        Logger.write_log(f"Estimated analysis time reduced by ~{step}x", log_box=self.gui)
+
+        # ---- analyze snapshots safely ----
+        for period, commit in snapshot_items:
+
+            Logger.write_log(f"Analyzing snapshot {period} ({commit.hexsha[:8]})", log_box=self.gui)
+
+            temp_dir = tempfile.mkdtemp(prefix="complexity_snapshot_")
+
+            try:
+                repo.git.config("core.protectNTFS", "false")
+                repo.git.config("core.longpaths", "true")
+                repo.git.worktree("add", "--detach", temp_dir, commit.hexsha)
+
+                snapshot_complexity = self.__analyze_code_complexity_with_lizard(repo_path=Path(temp_dir))
 
                 if not snapshot_complexity:
                     continue
@@ -204,18 +277,33 @@ class RepoManagement:
                     )
                 )
 
-        finally:
-            repo.git.checkout(original_head)
+            except Exception as e:
+                Logger.write_log(
+                    f"Snapshot analysis failed for {commit.hexsha[:8]}: {e}",
+                    log_box=self.gui,
+                    log_type=Logger.LogType.WARN,
+                )
+
+            finally:
+                try:
+                    repo.git.worktree("remove", "--force", temp_dir)
+                except Exception:
+                    pass
+
+                shutil.rmtree(temp_dir, ignore_errors=True)
 
         ComplexityTrendData.sort_by_date(trends)
 
-        Logger.write_log(f"Complexity trend built from {len(trends)} repository snapshots", log_box=self.log_box)
+        Logger.write_log(
+            f"Complexity trend built from {len(trends)} repository snapshots",
+            log_box=self.gui,
+        )
 
         return trends
 
 
     def __find_possible_duplicates(self, stats: list[LizardData]) -> list[DuplicationData]:
-        Logger.write_log("Analyzing code duplication (prehashed)...", log_box=self.log_box)
+        Logger.write_log("Analyzing code duplication (prehashed)...", log_box=self.gui)
         duplicates: list[DuplicationData] = []
 
         stats.sort(key=lambda s: s.hash_value)
@@ -240,7 +328,7 @@ class RepoManagement:
                 if score <= threshold:
                     duplicates.append(DuplicationData(ld1, ld2, score))
 
-        Logger.write_log(f"Found {len(duplicates)} duplications", log_box=self.log_box)
+        Logger.write_log(f"Found {len(duplicates)} duplications", log_box=self.gui)
         return duplicates
 
     def __skip_function_from_analysis(
@@ -253,7 +341,7 @@ class RepoManagement:
         )
 
     def __get_bus_factor_data(self, authors: list[Author]) -> list[BusFactorData]:
-        Logger.write_log("Calculating code ownership by file stats...", log_box=self.log_box)
+        Logger.write_log("Calculating code ownership by file stats...", log_box=self.gui)
         file_counts_map: list[BusFactorData] = []
 
         # All file in the current branch
@@ -262,7 +350,7 @@ class RepoManagement:
         except Exception as e:
             Logger.write_log(
                 f"Error getting tracked files from HEAD: {e}",
-                log_box=self.log_box,
+                log_box=self.gui,
                 log_type=Logger.LogType.WARN,
             )
             return []
@@ -280,11 +368,11 @@ class RepoManagement:
             except Exception as e:
                 Logger.write_log(
                     f"Error occurred while calculating code ownership for file {rel_path}: {e}",
-                    log_box=self.log_box,
+                    log_box=self.gui,
                     log_type=Logger.LogType.WARN,
                 )
 
-        Logger.write_log("Code ownership successfully calculated", log_box=self.log_box)
+        Logger.write_log("Code ownership successfully calculated", log_box=self.gui)
         return file_counts_map
 
     def __map_blame_file_into_bus_factor(
@@ -303,14 +391,14 @@ class RepoManagement:
             "\\", "/"
         )
 
-        Logger.write_log(f"calculating ownership for file: {rel_path}", log_box=self.log_box)
+        Logger.write_log(f"calculating ownership for file: {rel_path}", log_box=self.gui)
 
         try:
             result = self._repo_obj.git.blame("--line-porcelain", rel_path)
         except Exception as e:
             Logger.write_log(
                 f"Git blame exited with error on file {rel_path}: {e}",
-                log_box=self.log_box,
+                log_box=self.gui,
                 log_type=Logger.LogType.WARN,
             )
             return
@@ -326,8 +414,8 @@ class RepoManagement:
             if author_obj is None:
                 Logger.write_log(
                     f"Author '{author_name}' not found, ignored in {rel_path}",
-                    log_box=self.log_box,
-                    log_type=Logger.LogType.WARN,
+                    log_box=self.gui,
+                    log_type=Logger.LogType.WARN
                 )
                 continue
 
@@ -343,7 +431,7 @@ class RepoManagement:
             yield commit
 
     def __get_authors(self) -> list[Author]:
-        Logger.write_log("Getting authors...", log_box=self.log_box)
+        Logger.write_log("Getting authors...", log_box=self.gui)
 
         authors: list[Author] = []
         noreply_authors: list[Author] = []
@@ -368,7 +456,7 @@ class RepoManagement:
                 authors.append(new_author)
                 Logger.write_log(
                     f"User (from commit): {new_author.main_username} ({new_author.main_email})",
-                    log_box=self.log_box,
+                    log_box=self.gui,
                 )
 
         # from branches
@@ -377,7 +465,7 @@ class RepoManagement:
         except Exception as e:
             Logger.write_log(
                 f"Error fetching from remote origin: {e}",
-                log_box=self.log_box,
+                log_box=self.gui,
                 log_type=Logger.LogType.WARN,
             )
 
@@ -401,7 +489,7 @@ class RepoManagement:
                         authors.append(new_author)
                         Logger.write_log(
                             f"User (from branch): {new_author.main_username} ({new_author.main_email})",
-                            log_box=self.log_box,
+                            log_box=self.gui,
                         )
 
         # sanification github noreply
@@ -419,14 +507,14 @@ class RepoManagement:
                 authors.append(noreply)
                 Logger.write_log(
                     f"Main email not found for user: {noreply.main_username} ({noreply.main_email})",
-                    log_box=self.log_box,
+                    log_box=self.gui,
                     log_type=Logger.LogType.WARN,
                 )
 
         return authors
 
     def __get_authors_stats_list(self, authors: list[Author]) -> list[AuthorStats]:
-        Logger.write_log("Getting authors stats list...", log_box=self.log_box)
+        Logger.write_log("Getting authors stats list...", log_box=self.gui)
 
         author_stats_map = {
             author.main_username: AuthorStats(
@@ -471,7 +559,7 @@ class RepoManagement:
                 a_stats.files.per_extension[ext] += 1
 
         Logger.write_log(
-            f"Author stats list obtained ({len(author_stats_map)})", log_box=self.log_box
+            f"Author stats list obtained ({len(author_stats_map)})", log_box=self.gui
         )
 
         # removing all users with no data from list
@@ -486,7 +574,7 @@ class RepoManagement:
         return file_extension in self.configs.AuthorStat.ExcludeExtensions
 
     def __get_files_stats_list(self, authors: list[Author]) -> list[FileStats]:
-        Logger.write_log("Getting files stats list...", log_box=self.log_box)
+        Logger.write_log("Getting files stats list...", log_box=self.gui)
 
         file_stats_map: dict[str, FileStats] = {}
 
@@ -512,11 +600,11 @@ class RepoManagement:
         return files_stats
 
     def __get_commits_stats_list(self, authors: list[Author]) -> list[CommitStats]:
-        Logger.write_log("Getting commits stats list...", log_box=self.log_box)
+        Logger.write_log("Getting commits stats list...", log_box=self.gui)
 
         commits_stats = []
         for commit in self.__iter_filtered_commits():
-            Logger.write_log(f"Getting commit stats for {commit.hexsha}", log_box=self.log_box)
+            Logger.write_log(f"Getting commit stats for {commit.hexsha}", log_box=self.gui)
             if not commit.author.email:
                 continue
             author = self.__find_author(commit.author.email, authors)
@@ -529,20 +617,20 @@ class RepoManagement:
         return commits_stats
 
     def __get_branches_stats_list(self, authors: list[Author]) -> list[BranchStats]:
-        Logger.write_log("Getting all branches (local + remote)...", log_box=self.log_box)
+        Logger.write_log("Getting all branches (local + remote)...", log_box=self.gui)
 
         branches = list(self._repo_obj.branches) + list(self._repo_obj.remotes.origin.refs)
         branches_stats = []
 
         for branch in branches:
-            Logger.write_log(f"Getting branch stats for {branch.name}", log_box=self.log_box)
+            Logger.write_log(f"Getting branch stats for {branch.name}", log_box=self.gui)
 
             try:
                 commit = branch.commit
             except Exception as e:
                 Logger.write_log(
                     f"Cannot access commit for {branch.name}: {e}",
-                    log_box=self.log_box,
+                    log_box=self.gui,
                     log_type=Logger.LogType.WARN,
                 )
                 continue
@@ -552,7 +640,7 @@ class RepoManagement:
             except Exception as e:
                 Logger.write_log(
                     f"Cannot count commits for {branch.name}: {e}",
-                    log_box=self.log_box,
+                    log_box=self.gui,
                     log_type=Logger.LogType.WARN,
                 )
                 commit_count = 0
@@ -584,10 +672,10 @@ class RepoManagement:
                 return author
         Logger.write_log(
             f"No user with email {email} found, setting value to Unknown",
-            log_box=self.log_box,
+            log_box=self.gui,
             log_type=Logger.LogType.WARN,
         )
-        return Author(email, "Unknown")
+        return Author.get_unknown_author()
 
     def __plot_all_stats(
         self,
@@ -600,7 +688,7 @@ class RepoManagement:
         bus_factor: list[BusFactorData] | None,
         complexity_trend: list[ComplexityTrendData] | None,
     ) -> None:
-        Logger.write_log("Preparing data for plotting", log_box=self.log_box)
+        Logger.write_log("Preparing data for plotting", log_box=self.gui)
 
         plot = Plot()
         if all_stats is not None:
@@ -704,10 +792,10 @@ class RepoManagement:
             csv_complexity_trend,
         )
 
-        Logger.write_log("Generating dashboard file .html", log_box=self.log_box)
+        Logger.write_log("Generating dashboard file .html", log_box=self.gui)
         Dashboard.generate_html_page(data_to_plot)
 
-        Logger.write_log(message="Opening Dashboard", log_box=self.log_box)
+        Logger.write_log(message="Opening Dashboard", log_box=self.gui)
         Dashboard.open_result_website()
 
 
